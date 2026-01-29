@@ -1,0 +1,394 @@
+version: '3.9'
+
+services:
+  # ==================== INFRASTRUCTURE ====================
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: kubidu-postgres
+    environment:
+      POSTGRES_DB: kubidu
+      POSTGRES_USER: kubidu
+      POSTGRES_PASSWORD: kubidu_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kubidu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kubidu-network
+
+  # Redis (Cache & Queue)
+  redis:
+    image: redis:7-alpine
+    container_name: kubidu-redis
+    command: redis-server --requirepass kubidu_redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - kubidu-network
+
+  # MinIO (S3-compatible object storage)
+  minio:
+    image: minio/minio:latest
+    container_name: kubidu-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: kubidu
+      MINIO_ROOT_PASSWORD: kubidu_dev_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - kubidu-network
+
+  # Docker Registry
+  registry:
+    image: registry:2
+    container_name: kubidu-registry
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry_data:/data
+    networks:
+      - kubidu-network
+
+  # K3s Kubernetes (lightweight Kubernetes)
+  k3s:
+    image: rancher/k3s:v1.28.4-k3s1
+    container_name: kubidu-k3s
+    privileged: true
+    environment:
+      K3S_TOKEN: kubidu-k3s-secret-token
+      K3S_KUBECONFIG_OUTPUT: /output/kubeconfig.yaml
+      K3S_KUBECONFIG_MODE: "666"
+    command:
+      - server
+      - --disable=traefik
+      - --write-kubeconfig-mode=644
+      - --tls-san=k3s
+      - --bind-address=0.0.0.0
+    ports:
+      - "6443:6443"
+      - "80:80"
+      - "443:443"
+      - "8081:8081"
+    volumes:
+      - k3s_data:/var/lib/rancher/k3s
+      - ./kubeconfig:/output
+    tmpfs:
+      - /run
+      - /var/run
+    networks:
+      - kubidu-network
+
+  # ==================== APPLICATION SERVICES ====================
+
+  # API Service (Main REST API)
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    container_name: kubidu-api
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+      REDIS_URL: redis://:kubidu_redis_password@redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kubidu_redis_password
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production-min-32-chars
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production-min-32-chars
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: kubidu
+      MINIO_SECRET_KEY: kubidu_dev_password
+      MINIO_USE_SSL: "false"
+      K8S_KUBECONFIG_PATH: /kubeconfig/kubeconfig.yaml
+      CORS_ORIGIN: http://localhost:5173
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_NAME: ${GITHUB_APP_NAME:-kubidu-dev}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_APP_CALLBACK_URL: http://localhost:5173/github/callback
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/api:/app/packages/api
+      - ./packages/shared:/app/packages/shared
+      - /app/packages/shared/node_modules
+      - ./kubeconfig:/kubeconfig:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c "chmod +x /app/packages/api/dev.sh && /app/packages/api/dev.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      k3s:
+        condition: service_started
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Smee.io webhook proxy (forwards GitHub webhooks to local webhook service)
+  smee:
+    image: node:20-alpine
+    container_name: kubidu-smee
+    command: npx smee-client -u ${SMEE_URL:-https://smee.io/tBd0ThUntSYO0Tw} -t http://webhook-service:3001/webhooks/github
+    depends_on:
+      - webhook-service
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Webhook Service (GitHub webhooks)
+  webhook-service:
+    build:
+      context: .
+      dockerfile: packages/webhook-service/Dockerfile
+    container_name: kubidu-webhook
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+      REDIS_URL: redis://:kubidu_redis_password@redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kubidu_redis_password
+      GITHUB_WEBHOOK_SECRET: your-github-webhook-secret-change-this
+      GITLAB_WEBHOOK_SECRET: your-gitlab-webhook-secret-change-this
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/webhook-service:/app/packages/webhook-service
+      - ./packages/shared:/app/packages/shared
+      - ./packages/api/prisma:/app/packages/api/prisma:ro
+      - /app/packages/webhook-service/node_modules
+      - /app/packages/shared/node_modules
+    command: sh -c "chmod +x /app/packages/webhook-service/dev.sh && /app/packages/webhook-service/dev.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Build Service (Docker image builder)
+  build-service:
+    build:
+      context: .
+      dockerfile: packages/build-service/Dockerfile
+    container_name: kubidu-build
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+      REDIS_URL: redis://:kubidu_redis_password@redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kubidu_redis_password
+      REGISTRY_URL: registry:5000
+      DOCKER_HOST: unix:///var/run/docker.sock
+      BUILD_TIMEOUT_SECONDS: 1800
+      MAX_CONCURRENT_BUILDS: 3
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+    volumes:
+      - ./packages/build-service:/app/packages/build-service
+      - ./packages/shared:/app/packages/shared
+      - ./packages/api/prisma:/app/packages/api/prisma:ro
+      - /app/packages/build-service/node_modules
+      - /app/packages/shared/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+      - build_cache:/build-cache
+    command: sh -c "chmod +x /app/packages/build-service/dev.sh && /app/packages/build-service/dev.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      registry:
+        condition: service_started
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Deploy Controller (Kubernetes orchestration)
+  deploy-controller:
+    build:
+      context: .
+      dockerfile: packages/deploy-controller/Dockerfile
+    container_name: kubidu-deploy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+      REDIS_URL: redis://:kubidu_redis_password@redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kubidu_redis_password
+      K8S_KUBECONFIG_PATH: /kubeconfig/kubeconfig.yaml
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      DEFAULT_DOMAIN_SUFFIX: 127.0.0.1.nip.io
+    volumes:
+      - ./packages/deploy-controller:/app/packages/deploy-controller
+      - ./packages/shared:/app/packages/shared
+      - ./packages/api/prisma:/app/packages/api/prisma:ro
+      - /app/packages/deploy-controller/node_modules
+      - /app/packages/shared/node_modules
+      - ./kubeconfig:/kubeconfig:ro
+    command: sh -c "chmod +x /app/packages/deploy-controller/dev.sh && /app/packages/deploy-controller/dev.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      k3s:
+        condition: service_started
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Billing Service (Stripe integration) - Not implemented yet
+  # billing-service:
+  #   build:
+  #     context: .
+  #     dockerfile: packages/billing-service/Dockerfile
+  #   container_name: kubidu-billing
+  #   environment:
+  #     NODE_ENV: development
+  #     PORT: 3003
+  #     DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+  #     REDIS_URL: redis://:kubidu_redis_password@redis:6379
+  #     STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_your_stripe_key_here}
+  #     STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_your_webhook_secret_here}
+  #     K8S_KUBECONFIG_PATH: /kubeconfig/kubeconfig.yaml
+  #   ports:
+  #     - "3003:3003"
+  #   volumes:
+  #     - ./packages/billing-service:/app/packages/billing-service
+  #     - ./packages/shared:/app/packages/shared
+  #     - ./kubeconfig:/kubeconfig:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - kubidu-network
+  #   restart: unless-stopped
+
+  # Audit Service (ISO 27001 compliance) - Not implemented yet
+  # audit-service:
+  #   build:
+  #     context: .
+  #     dockerfile: packages/audit-service/Dockerfile
+  #   container_name: kubidu-audit
+  #   environment:
+  #     NODE_ENV: development
+  #     DATABASE_URL: postgresql://kubidu:kubidu_dev_password@postgres:5432/kubidu
+  #     REDIS_URL: redis://:kubidu_redis_password@redis:6379
+  #     MINIO_ENDPOINT: minio
+  #     MINIO_PORT: 9000
+  #     MINIO_ACCESS_KEY: kubidu
+  #     MINIO_SECRET_KEY: kubidu_dev_password
+  #     MINIO_USE_SSL: "false"
+  #   volumes:
+  #     - ./packages/audit-service:/app/packages/audit-service
+  #     - ./packages/shared:/app/packages/shared
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_started
+  #   networks:
+  #     - kubidu-network
+  #   restart: unless-stopped
+
+  # Web Frontend (React dashboard)
+  web:
+    image: node:20-alpine
+    container_name: kubidu-web
+    working_dir: /app
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_WS_URL: ws://localhost:3000
+      VITE_GITHUB_APP_NAME: ${GITHUB_APP_NAME:-kubidu-dev}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./packages/web:/app/packages/web
+      - ./packages/shared:/app/packages/shared
+      - /app/packages/web/node_modules
+      - /app/packages/shared/node_modules
+      - ./package.json:/app/package.json
+    command: sh -c "npm install && cd /app/packages/shared && npm run build && cd /app/packages/web && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy & API Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: kubidu-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/api-gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - webhook-service
+      - web
+    networks:
+      - kubidu-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  registry_data:
+    driver: local
+  k3s_data:
+    driver: local
+  build_cache:
+    driver: local
+
+networks:
+  kubidu-network:
+    driver: bridge

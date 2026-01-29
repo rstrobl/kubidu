@@ -1,0 +1,29 @@
+{
+  "name": "kubidu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GDPR & ISO 27001 compliant PaaS platform",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:detached": "docker-compose up -d",
+    "down": "docker-compose down",
+    "down:volumes": "docker-compose down -v",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "setup": "bash scripts/setup.sh",
+    "db:migrate": "bash scripts/init-db.sh",
+    "generate:keys": "bash scripts/generate-keys.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

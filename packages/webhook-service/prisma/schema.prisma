@@ -1,0 +1,468 @@
+// Prisma schema for Kubidu PaaS Platform - REFACTORED
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for type safety
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum ServiceType {
+  GITHUB
+  DOCKER_IMAGE
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+enum DeploymentStatus {
+  PENDING
+  BUILDING
+  DEPLOYING
+  RUNNING
+  STOPPED
+  FAILED
+  CRASHED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+// User accounts
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  passwordHash     String     @map("password_hash")
+  name             String?
+  avatarUrl        String?    @map("avatar_url")
+  emailVerified    Boolean    @default(false) @map("email_verified")
+  twoFactorEnabled Boolean    @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String?    @map("two_factor_secret")
+  status           UserStatus @default(ACTIVE)
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  lastLoginAt      DateTime?  @map("last_login_at")
+  deletedAt        DateTime?  @map("deleted_at")
+
+  projects              Project[]
+  apiKeys               ApiKey[]
+  subscriptions         Subscription[]
+  usageRecords          UsageRecord[]
+  invoices              Invoice[]
+  notifications         Notification[]
+  gdprConsents          GdprConsent[]
+  gdprRequests          GdprDataRequest[]
+  auditLogs             AuditLog[]
+  githubInstallations   GitHubInstallation[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// API keys for CLI authentication
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String
+  keyHash     String    @unique @map("key_hash")
+  keyPrefix   String    @map("key_prefix")
+  permissions String[]
+  expiresAt   DateTime? @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// Projects (container for services)
+model Project {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  name        String
+  slug        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([userId, status])
+  @@map("projects")
+}
+
+// Services (GitHub repos or Docker images)
+model Service {
+  id          String        @id @default(uuid())
+  projectId   String        @map("project_id")
+  name        String
+  serviceType ServiceType   @map("service_type")
+  status      ServiceStatus @default(ACTIVE)
+
+  // GitHub source fields
+  repositoryUrl        String? @map("repository_url")
+  repositoryProvider   String? @map("repository_provider")
+  repositoryBranch     String? @default("main") @map("repository_branch")
+  githubInstallationId String? @map("github_installation_id")
+  githubRepoFullName   String? @map("github_repo_full_name")
+
+  // Docker image source fields
+  dockerImage String? @map("docker_image")
+  dockerTag   String? @default("latest") @map("docker_tag")
+
+  // Default deployment configuration (can be overridden per deployment)
+  defaultPort            Int     @default(8080) @map("default_port")
+  defaultReplicas        Int     @default(1) @map("default_replicas")
+  defaultCpuLimit        String  @default("1000m") @map("default_cpu_limit")
+  defaultMemoryLimit     String  @default("512Mi") @map("default_memory_limit")
+  defaultCpuRequest      String  @default("100m") @map("default_cpu_request")
+  defaultMemoryRequest   String  @default("128Mi") @map("default_memory_request")
+  defaultHealthCheckPath String  @default("/") @map("default_health_check_path")
+  defaultStartCommand    String? @map("default_start_command")
+
+  // Public subdomain (e.g., "myapp" becomes "myapp.172.21.0.4.nip.io")
+  subdomain String? @unique @map("subdomain")
+
+  // Public URL - points to the active deployment
+  url String? @map("url")
+
+  autoDeploy Boolean  @default(true) @map("auto_deploy")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  project              Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  githubInstallation   GitHubInstallation?   @relation(fields: [githubInstallationId], references: [id], onDelete: SetNull)
+  deployments          Deployment[]
+  environmentVariables EnvironmentVariable[]
+  domains              Domain[]
+  buildQueue           BuildQueue[]
+  webhookEvents        WebhookEvent[]
+
+  @@index([projectId])
+  @@index([projectId, status])
+  @@index([githubInstallationId])
+  @@map("services")
+}
+
+// GitHub App installations
+model GitHubInstallation {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  installationId   Int       @unique @map("installation_id")
+  accountLogin     String    @map("account_login")
+  accountType      String    @map("account_type")
+  accountAvatarUrl String?   @map("account_avatar_url")
+  permissions      Json?
+  suspendedAt      DateTime? @map("suspended_at")
+  uninstalledAt    DateTime? @map("uninstalled_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@index([userId])
+  @@map("github_installations")
+}
+
+// Deployments (instances of services)
+model Deployment {
+  id               String           @id @default(uuid())
+  serviceId        String           @map("service_id")
+  name             String
+  status           DeploymentStatus @default(PENDING)
+
+  // Build information
+  imageUrl         String? @map("image_url")
+  imageTag         String? @map("image_tag")
+  buildLogs        String? @map("build_logs")
+  gitCommitSha     String? @map("git_commit_sha")
+  gitCommitMessage String? @map("git_commit_message")
+  gitAuthor        String? @map("git_author")
+
+  // Runtime configuration (can override service defaults)
+  port            Int?    @map("port")
+  replicas        Int?    @map("replicas")
+  cpuLimit        String? @map("cpu_limit")
+  memoryLimit     String? @map("memory_limit")
+  cpuRequest      String? @map("cpu_request")
+  memoryRequest   String? @map("memory_request")
+  healthCheckPath String? @map("health_check_path")
+
+  // Runtime logs and metrics
+  deploymentLogs String? @map("deployment_logs")
+
+  // Active deployment tracking (only one active per service)
+  isActive Boolean @default(false) @map("is_active")
+
+  // Lifecycle timestamps
+  deployedAt DateTime? @map("deployed_at")
+  stoppedAt  DateTime? @map("stopped_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  service              Service               @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  environmentVariables EnvironmentVariable[]
+
+  @@index([serviceId])
+  @@index([serviceId, status])
+  @@index([status])
+  @@map("deployments")
+}
+
+// Environment variables (encrypted)
+// Service-level: inherited by all deployments of that service
+// Deployment-level: overrides service-level for specific deployment
+model EnvironmentVariable {
+  id             String    @id @default(uuid())
+  serviceId      String?   @map("service_id")
+  deploymentId   String?   @map("deployment_id")
+  key            String
+  valueEncrypted String    @map("value_encrypted")
+  valueIv        String    @map("value_iv")
+  isSecret       Boolean   @default(true) @map("is_secret")
+  isSystem       Boolean   @default(false) @map("is_system")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  service    Service?    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  deployment Deployment? @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, deploymentId, key], name: "env_var_scope_key_unique")
+  @@index([serviceId])
+  @@index([deploymentId])
+  @@map("environment_variables")
+}
+
+// Custom domains (tied to services, not deployments)
+model Domain {
+  id               String    @id @default(uuid())
+  serviceId        String    @map("service_id")
+  domain           String    @unique
+  verificationCode String?   @map("verification_code")
+  isVerified       Boolean   @default(false) @map("is_verified")
+  verifiedAt       DateTime? @map("verified_at")
+  sslCertificate   String?   @map("ssl_certificate")
+  sslKey           String?   @map("ssl_key")
+  sslExpiresAt     DateTime? @map("ssl_expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([domain])
+  @@map("domains")
+}
+
+// Build queue
+model BuildQueue {
+  id                   String    @id @default(uuid())
+  serviceId            String    @map("service_id")
+  deploymentId         String    @map("deployment_id")
+  status               String    @default("pending")
+  buildStartTime       DateTime? @map("build_start_time")
+  buildEndTime         DateTime? @map("build_end_time")
+  buildDurationSeconds Int?      @map("build_duration_seconds")
+  errorMessage         String?   @map("error_message")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([deploymentId])
+  @@index([status])
+  @@map("build_queue")
+}
+
+// Webhook events
+model WebhookEvent {
+  id          String    @id @default(uuid())
+  serviceId   String    @map("service_id")
+  provider    String
+  eventType   String    @map("event_type")
+  payload     Json
+  signature   String?
+  processed   Boolean   @default(false)
+  processedAt DateTime? @map("processed_at")
+  error       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([processed])
+  @@map("webhook_events")
+}
+
+// Subscriptions (Stripe)
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @map("user_id")
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  canceledAt           DateTime?          @map("canceled_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@map("subscriptions")
+}
+
+// Usage tracking
+model UsageRecord {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  resourceType  String   @map("resource_type")
+  amount        Float
+  unit          String
+  recordedAt    DateTime @map("recorded_at")
+  billingPeriod String   @map("billing_period")
+  projectId     String?  @map("project_id")
+  deploymentId  String?  @map("deployment_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, billingPeriod])
+  @@index([recordedAt])
+  @@index([projectId, billingPeriod])
+  @@index([deploymentId, recordedAt])
+  @@map("usage_records")
+}
+
+// Invoices
+model Invoice {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  stripeInvoiceId String?   @map("stripe_invoice_id")
+  amount          Float
+  currency        String    @default("usd")
+  status          String
+  dueDate         DateTime? @map("due_date")
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeInvoiceId])
+  @@map("invoices")
+}
+
+// Audit logs (ISO 27001 compliance)
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+// GDPR consents
+model GdprConsent {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  consentType    String   @map("consent_type")
+  consentVersion String   @map("consent_version")
+  consentGiven   Boolean  @map("consent_given")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gdpr_consents")
+}
+
+// GDPR data requests
+model GdprDataRequest {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  requestType String    @map("request_type")
+  status      String
+  downloadUrl String?   @map("download_url")
+  expiresAt   DateTime? @map("expires_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gdpr_data_requests")
+}
+
+// Notifications
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String
+  read      Boolean   @default(false)
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
