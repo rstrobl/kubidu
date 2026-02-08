@@ -221,6 +221,7 @@ model Project {
   templateDeployments TemplateDeployment[]
   volumes             Volume[]
   environments        Environment[]
+  webhooks            Webhook[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -764,4 +765,65 @@ model Volume {
   @@index([serviceId])
   @@index([templateDeploymentId])
   @@map("volumes")
+}
+
+// Webhook types
+enum WebhookType {
+  DISCORD
+  SLACK
+  CUSTOM
+}
+
+// Outgoing Webhooks (for notifications)
+model Webhook {
+  id          String      @id @default(uuid())
+  projectId   String      @map("project_id")
+  
+  name        String
+  url         String
+  type        WebhookType @default(CUSTOM)
+  secret      String?     // HMAC secret for signing
+  
+  // Event subscriptions
+  events      String[]    // e.g., ["deployment.success", "deployment.failed", "build.started"]
+  
+  enabled     Boolean     @default(true)
+  
+  // Delivery stats
+  lastDeliveryAt   DateTime? @map("last_delivery_at")
+  lastDeliveryOk   Boolean?  @map("last_delivery_ok")
+  failureCount     Int       @default(0) @map("failure_count")
+  
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+  
+  @@index([projectId])
+  @@index([enabled])
+  @@map("webhooks")
+}
+
+// Webhook delivery log
+model WebhookDelivery {
+  id          String   @id @default(uuid())
+  webhookId   String   @map("webhook_id")
+  
+  event       String   // e.g., "deployment.success"
+  payload     Json
+  
+  statusCode  Int?     @map("status_code")
+  response    String?  // First 1KB of response
+  error       String?
+  
+  duration    Int?     // Response time in ms
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  
+  @@index([webhookId])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
 }

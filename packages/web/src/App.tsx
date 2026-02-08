@@ -19,6 +19,9 @@ import { WorkspaceSettings } from './pages/WorkspaceSettings';
 import { NotificationSettings } from './pages/NotificationSettings';
 import { Notifications } from './pages/Notifications';
 import { Impact } from './pages/Impact';
+import { Activity } from './pages/Activity';
+import { Insights } from './pages/Insights';
+import { Dependencies } from './pages/Dependencies';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -162,6 +165,7 @@ function App() {
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/logs" element={<ProjectLogs />} />
+            <Route path="projects/:id/dependencies" element={<Dependencies />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
             <Route path="workspaces/new" element={<NewWorkspace />} />
             <Route path="workspaces/:id/settings" element={<WorkspaceSettings />} />
@@ -169,6 +173,8 @@ function App() {
             <Route path="settings/notifications" element={<NotificationSettings />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="impact" element={<Impact />} />
+            <Route path="activity" element={<Activity />} />
+            <Route path="insights" element={<Insights />} />
           </Route>
 
           {/* Catch-all redirect */}

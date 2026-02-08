@@ -541,6 +541,90 @@ class ApiService {
     const response = await this.client.get(`/audit?${params.toString()}`);
     return response.data;
   }
+
+  // Activity feed endpoints
+  async getActivity(options: {
+    workspaceId: string;
+    limit?: number;
+    offset?: number;
+    projectId?: string;
+    serviceId?: string;
+    type?: string;
+  }) {
+    const params = new URLSearchParams();
+    params.append('workspaceId', options.workspaceId);
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+    if (options.projectId) params.append('projectId', options.projectId);
+    if (options.serviceId) params.append('serviceId', options.serviceId);
+    if (options.type) params.append('type', options.type);
+    const response = await this.client.get(`/activity?${params.toString()}`);
+    return response.data;
+  }
+
+  async getActivityStats(options: {
+    workspaceId: string;
+    days?: number;
+  }) {
+    const params = new URLSearchParams();
+    params.append('workspaceId', options.workspaceId);
+    if (options.days) params.append('days', options.days.toString());
+    const response = await this.client.get(`/activity/stats?${params.toString()}`);
+    return response.data;
+  }
+
+  // Webhook endpoints
+  async getWebhooks(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/webhooks`);
+    return response.data;
+  }
+
+  async createWebhook(projectId: string, data: {
+    name: string;
+    url: string;
+    events: string[];
+    secret?: string;
+  }) {
+    const response = await this.client.post(`/projects/${projectId}/webhooks`, data);
+    return response.data;
+  }
+
+  async updateWebhook(projectId: string, webhookId: string, data: {
+    name?: string;
+    url?: string;
+    events?: string[];
+    enabled?: boolean;
+  }) {
+    const response = await this.client.patch(`/projects/${projectId}/webhooks/${webhookId}`, data);
+    return response.data;
+  }
+
+  async deleteWebhook(projectId: string, webhookId: string) {
+    const response = await this.client.delete(`/projects/${projectId}/webhooks/${webhookId}`);
+    return response.data;
+  }
+
+  async testWebhook(projectId: string, webhookId: string) {
+    const response = await this.client.post(`/projects/${projectId}/webhooks/${webhookId}/test`);
+    return response.data;
+  }
+
+  // Insights/Analytics endpoints
+  async getDeploymentInsights(workspaceId: string, days = 30) {
+    const response = await this.client.get(`/insights/deployments?workspaceId=${workspaceId}&days=${days}`);
+    return response.data;
+  }
+
+  async getBuildInsights(workspaceId: string, days = 30) {
+    const response = await this.client.get(`/insights/builds?workspaceId=${workspaceId}&days=${days}`);
+    return response.data;
+  }
+
+  // Dependencies graph endpoints
+  async getServiceDependencies(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/dependencies`);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

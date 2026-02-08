@@ -21,7 +21,7 @@ export function Layout() {
   const [projects, setProjects] = useState<any[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -188,6 +188,13 @@ export function Layout() {
                     </svg>
                     <span className="hidden lg:inline ml-1.5">Logs</span>
                   </Link>
+                  <Link
+                    to={`/projects/${currentProjectId}/dependencies`}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <span className="text-sm">🔗</span>
+                    <span className="hidden lg:inline ml-1.5">Dependencies</span>
+                  </Link>
                   <button
                     onClick={() => setIsSettingsModalOpen(true)}
                     className="btn btn-ghost btn-sm"
@@ -266,6 +273,22 @@ export function Layout() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         Settings
+                      </Link>
+                      <Link
+                        to="/activity"
+                        onClick={() => setShowUserMenu(false)}
+                        className="dropdown-item"
+                      >
+                        <span className="w-4 h-4 text-center">📊</span>
+                        Activity Feed
+                      </Link>
+                      <Link
+                        to="/insights"
+                        onClick={() => setShowUserMenu(false)}
+                        className="dropdown-item"
+                      >
+                        <span className="w-4 h-4 text-center">📈</span>
+                        Deployment Insights
                       </Link>
                       <Link
                         to="/impact"

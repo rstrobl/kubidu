@@ -12,6 +12,7 @@ import { DeploymentsModule } from './modules/deployments/deployments.module';
 import { EnvironmentsModule } from './modules/environments/environments.module';
 import { DomainsModule } from './modules/domains/domains.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { ActivityModule } from './modules/activity/activity.module';
 import { HealthModule } from './modules/health/health.module';
 import { GitHubModule } from './modules/github/github.module';
 import { UsageStatsModule } from './modules/usage-stats/usage-stats.module';
@@ -20,6 +21,7 @@ import { VolumesModule } from './modules/volumes/volumes.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EmailModule } from './modules/email/email.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AuditLoggerMiddleware } from './middleware/audit-logger.middleware';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { SharedServicesModule } from './services/shared-services.module';
@@ -71,6 +73,7 @@ import { SharedServicesModule } from './services/shared-services.module';
     EnvironmentsModule,
     DomainsModule,
     AuditModule,
+    ActivityModule,
     HealthModule,
     GitHubModule,
     UsageStatsModule,
@@ -79,6 +82,7 @@ import { SharedServicesModule } from './services/shared-services.module';
     WorkspacesModule,
     NotificationsModule,
     EmailModule,
+    WebhooksModule,
   ],
 })
 export class AppModule implements NestModule {

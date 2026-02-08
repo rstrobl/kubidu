@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth.store';
 export function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const loadUser = useAuthStore((state) => state.loadUser);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,20 +21,13 @@ export function AuthCallback() {
     }
 
     if (accessToken && refreshToken) {
-      // Store tokens
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Store tokens (using the correct key names)
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
 
-      // Fetch user data and set auth state
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((user) => {
-          setAuth(user, accessToken, refreshToken);
-
+      // Load user via the auth store
+      loadUser()
+        .then(() => {
           if (isNewUser) {
             // New user - redirect to onboarding or dashboard with welcome
             navigate('/projects?welcome=true');
@@ -52,7 +45,7 @@ export function AuthCallback() {
       setError('Invalid authentication response');
       setTimeout(() => navigate('/login'), 3000);
     }
-  }, [searchParams, navigate, setAuth]);
+  }, [searchParams, navigate, loadUser]);
 
   if (error) {
     return (
