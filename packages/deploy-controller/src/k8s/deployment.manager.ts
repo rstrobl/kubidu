@@ -4,6 +4,7 @@ import {
   V1Deployment,
   V1Service,
   V1Ingress,
+  V1PersistentVolumeClaim,
 } from '@kubernetes/client-node';
 
 export interface DeploymentConfig {
@@ -24,6 +25,36 @@ export interface DeploymentConfig {
   subdomain?: string;
   customDomains?: string[]; // Verified custom domains
   startCommand?: string;
+}
+
+// Simplified config for template deployments
+export interface SimpleDeploymentConfig {
+  namespace: string;
+  name: string;
+  image: string;
+  replicas: number;
+  port: number;
+  command?: string[];
+  args?: string[];
+  envSecretName?: string;
+  resources?: {
+    limits: { cpu: string; memory: string };
+    requests: { cpu: string; memory: string };
+  };
+  labels?: Record<string, string>;
+  healthCheckPath?: string;
+  volumes?: Array<{
+    name: string;
+    mountPath: string;
+    claimName: string;
+  }>;
+}
+
+export interface SimpleServiceConfig {
+  namespace: string;
+  name: string;
+  port: number;
+  selector: Record<string, string>;
 }
 
 @Injectable()
@@ -143,6 +174,211 @@ export class DeploymentManager {
   }
 
   /**
+   * Create a deployment (simplified interface for template deployments)
+   */
+  async createDeployment(config: SimpleDeploymentConfig): Promise<void> {
+    const { namespace, name, image, replicas, port, command, args, envSecretName, resources, labels, healthCheckPath, volumes } = config;
+
+    const volumeMounts = volumes?.map(v => ({
+      name: v.name,
+      mountPath: v.mountPath,
+    })) || [];
+
+    const volumeSpecs = volumes?.map(v => ({
+      name: v.name,
+      persistentVolumeClaim: {
+        claimName: v.claimName,
+      },
+    })) || [];
+
+    const deployment: V1Deployment = {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name,
+        namespace,
+        labels: {
+          app: name,
+          'kubidu.io/managed': 'true',
+          ...labels,
+        },
+      },
+      spec: {
+        replicas,
+        selector: {
+          matchLabels: {
+            app: name,
+            ...(labels?.['kubidu.io/deployment-id'] ? { 'kubidu.io/deployment-id': labels['kubidu.io/deployment-id'] } : {}),
+          },
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: name,
+              ...labels,
+            },
+          },
+          spec: {
+            containers: [
+              {
+                name: name,
+                image,
+                ...(command ? { command } : {}),
+                ...(args ? { args } : {}),
+                ports: [{ containerPort: port, protocol: 'TCP' }],
+                resources: resources || {
+                  limits: { cpu: '1000m', memory: '512Mi' },
+                  requests: { cpu: '100m', memory: '128Mi' },
+                },
+                ...(volumeMounts.length > 0 ? { volumeMounts } : {}),
+                livenessProbe: {
+                  tcpSocket: { port: port as any },
+                  initialDelaySeconds: 30,
+                  periodSeconds: 10,
+                  timeoutSeconds: 5,
+                  failureThreshold: 3,
+                },
+                readinessProbe: {
+                  tcpSocket: { port: port as any },
+                  initialDelaySeconds: 10,
+                  periodSeconds: 5,
+                  timeoutSeconds: 3,
+                  failureThreshold: 3,
+                },
+                envFrom: envSecretName
+                  ? [{ secretRef: { name: envSecretName } }]
+                  : undefined,
+                securityContext: {
+                  allowPrivilegeEscalation: false,
+                  readOnlyRootFilesystem: false,
+                  capabilities: {
+                    drop: ['ALL'],
+                    add: ['CHOWN', 'SETUID', 'SETGID', 'FOWNER', 'DAC_OVERRIDE'],
+                  },
+                },
+              },
+            ],
+            ...(volumeSpecs.length > 0 ? { volumes: volumeSpecs } : {}),
+          },
+        },
+      },
+    };
+
+    try {
+      await this.k8sClient.appsApi.replaceNamespacedDeployment(name, namespace, deployment);
+      this.logger.log(`Updated deployment ${name} in namespace ${namespace}`);
+    } catch (error) {
+      if (error.response?.statusCode === 404) {
+        await this.k8sClient.appsApi.createNamespacedDeployment(namespace, deployment);
+        this.logger.log(`Created deployment ${name} in namespace ${namespace}`);
+      } else {
+        this.logger.error(`Failed to create/update deployment ${name}: ${error.message}`, error.response?.body);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Create a service (simplified interface for template deployments)
+   */
+  async createService(config: SimpleServiceConfig): Promise<void> {
+    const { namespace, name, port, selector } = config;
+
+    const service: V1Service = {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name,
+        namespace,
+        labels: {
+          'kubidu.io/managed': 'true',
+        },
+      },
+      spec: {
+        type: 'ClusterIP',
+        selector,
+        ports: [
+          {
+            name: 'http',
+            port: 80,
+            targetPort: port as any,
+            protocol: 'TCP',
+          },
+          ...(port !== 80 ? [{
+            name: 'app-port',
+            port: port,
+            targetPort: port as any,
+            protocol: 'TCP',
+          }] : []),
+        ],
+      },
+    };
+
+    try {
+      await this.k8sClient.coreApi.replaceNamespacedService(name, namespace, service);
+      this.logger.log(`Updated service ${name} in namespace ${namespace}`);
+    } catch (error) {
+      if (error.response?.statusCode === 404) {
+        await this.k8sClient.coreApi.createNamespacedService(namespace, service);
+        this.logger.log(`Created service ${name} in namespace ${namespace}`);
+      } else {
+        this.logger.error(`Failed to create/update service ${name}: ${error.message}`, error.response?.body);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Create a PersistentVolumeClaim
+   */
+  async createPersistentVolumeClaim(
+    namespace: string,
+    name: string,
+    size: string,
+    labels?: Record<string, string>,
+  ): Promise<void> {
+    const pvc: V1PersistentVolumeClaim = {
+      apiVersion: 'v1',
+      kind: 'PersistentVolumeClaim',
+      metadata: {
+        name,
+        namespace,
+        labels: {
+          'kubidu.io/managed': 'true',
+          ...labels,
+        },
+      },
+      spec: {
+        accessModes: ['ReadWriteOnce'],
+        resources: {
+          requests: {
+            storage: size,
+          },
+        },
+      },
+    };
+
+    try {
+      // Check if PVC already exists - PVCs can't be updated
+      await this.k8sClient.coreApi.readNamespacedPersistentVolumeClaim(name, namespace);
+      this.logger.log(`PVC ${name} already exists in namespace ${namespace}`);
+    } catch (error) {
+      if (error.response?.statusCode === 404) {
+        try {
+          await this.k8sClient.coreApi.createNamespacedPersistentVolumeClaim(namespace, pvc);
+          this.logger.log(`Created PVC ${name} in namespace ${namespace}`);
+        } catch (createError) {
+          this.logger.error(`Failed to create PVC ${name}: ${createError.message}`, JSON.stringify(createError.response?.body));
+          throw createError;
+        }
+      } else {
+        this.logger.error(`Failed to check PVC ${name}: ${error.message} (status: ${error.response?.statusCode})`, JSON.stringify(error.response?.body));
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Wait for deployment to be ready
    */
   async waitForRollout(
@@ -254,23 +490,24 @@ export class DeploymentManager {
    */
   async getPodLogs(
     namespace: string,
-    deploymentName: string,
+    deploymentId: string,
     tail?: number,
   ): Promise<string> {
     try {
-      // Find pods by label selector
+      // Find pods by deployment-id label (works for both regular and template deployments)
       const podsResponse = await this.k8sClient.coreApi.listNamespacedPod(
         namespace,
         undefined,
         undefined,
         undefined,
         undefined,
-        `app=${deploymentName}`,
+        `kubidu.io/deployment-id=${deploymentId}`,
       );
 
       const pods = podsResponse.body.items;
 
       if (pods.length === 0) {
+        this.logger.warn(`No pods found for deployment-id ${deploymentId} in namespace ${namespace}`);
         return 'No pods found for this deployment';
       }
 
@@ -386,7 +623,7 @@ export class DeploymentManager {
 
       return allLogs.join('\n');
     } catch (error) {
-      this.logger.error(`Failed to get pod logs for deployment ${deploymentName}: ${error.message}`);
+      this.logger.error(`Failed to get pod logs for deployment ${deploymentId}: ${error.message}`);
       return `Error retrieving logs: ${error.message}`;
     }
   }
@@ -529,9 +766,6 @@ export class DeploymentManager {
             },
           },
           spec: {
-            securityContext: {
-              fsGroup: 1000,
-            },
             containers: [
               {
                 name: config.name,
@@ -585,6 +819,7 @@ export class DeploymentManager {
                   readOnlyRootFilesystem: false,
                   capabilities: {
                     drop: ['ALL'],
+                    add: ['CHOWN', 'SETUID', 'SETGID', 'FOWNER', 'DAC_OVERRIDE'],
                   },
                 },
               },
@@ -637,7 +872,7 @@ export class DeploymentManager {
       spec: {
         type: 'ClusterIP',
         selector: {
-          app: config.name, // Points to the specific deployment
+          'kubidu.io/deployment-id': config.deploymentId, // Points to the specific deployment
         },
         ports,
       },
@@ -676,9 +911,10 @@ export class DeploymentManager {
 
     const annotations: Record<string, string> = {
       'kubernetes.io/ingress.class': 'traefik',
+      'traefik.ingress.kubernetes.io/router.tls': 'true', // Enable TLS for all domains
     };
 
-    // Add cert-manager annotations for custom domains (for automatic SSL)
+    // Add cert-manager annotations for custom domains (for automatic SSL with Let's Encrypt)
     if (config.customDomains && config.customDomains.length > 0) {
       annotations['cert-manager.io/cluster-issuer'] = 'letsencrypt-prod';
       annotations['traefik.ingress.kubernetes.io/redirect-entry-point'] = 'https';
@@ -699,12 +935,15 @@ export class DeploymentManager {
       },
       spec: {
         rules,
-        // Add TLS configuration for custom domains
-        ...(config.customDomains && config.customDomains.length > 0 && {
+        // Add TLS configuration for all domains (traefik uses default cert for nip.io, cert-manager for custom domains)
+        ...(allDomains.length > 0 && {
           tls: [
             {
-              hosts: config.customDomains,
-              secretName: `${config.name}-tls`,
+              hosts: allDomains,
+              // Only specify secretName for custom domains (cert-manager will create it)
+              ...(config.customDomains && config.customDomains.length > 0 && {
+                secretName: `${config.serviceName}-tls`,
+              }),
             },
           ],
         }),

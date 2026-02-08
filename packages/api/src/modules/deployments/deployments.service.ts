@@ -264,7 +264,8 @@ export class DeploymentsService {
 
     try {
       // Call deploy-controller to get pod logs from Kubernetes
-      const url = `${this.deployControllerUrl}/logs/${namespace}/${deployment.name}`;
+      // Pass deployment ID instead of name since pods are labeled with deployment-id
+      const url = `${this.deployControllerUrl}/logs/${namespace}/${deploymentId}`;
       const params = tail ? { tail: tail.toString() } : {};
 
       const response = await firstValueFrom(

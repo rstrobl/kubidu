@@ -12,6 +12,7 @@
   "dependencies": {
     "@kubidu/shared": "file:../shared",
     "@tanstack/react-query": "^5.17.0",
+    "@xyflow/react": "^12.10.0",
     "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

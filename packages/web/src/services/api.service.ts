@@ -65,6 +65,11 @@ class ApiService {
     return response.data;
   }
 
+  async updateProfile(data: { name?: string; avatarUrl?: string }) {
+    const response = await this.client.put('/users/me', data);
+    return response.data;
+  }
+
   // Project endpoints
   async getProjects() {
     const response = await this.client.get('/projects');
@@ -147,6 +152,9 @@ class ApiService {
     healthCheckPath: string;
     autoDeploy: boolean;
     status: string;
+    defaultStartCommand: string;
+    canvasX: number;
+    canvasY: number;
   }>) {
     const response = await this.client.put(`/projects/${projectId}/services/${serviceId}`, data);
     return response.data;
@@ -154,6 +162,13 @@ class ApiService {
 
   async deleteService(projectId: string, serviceId: string) {
     const response = await this.client.delete(`/projects/${projectId}/services/${serviceId}`);
+    return response.data;
+  }
+
+  async deleteServices(projectId: string, serviceIds: string[]) {
+    const response = await this.client.delete(`/projects/${projectId}/services`, {
+      data: { serviceIds },
+    });
     return response.data;
   }
 
@@ -219,7 +234,7 @@ class ApiService {
   }
 
   async createEnvironmentVariable(
-    data: { key: string; value: string; isSecret: boolean; serviceId?: string; deploymentId?: string }
+    data: { key: string; value: string; isSecret: boolean; serviceId?: string; deploymentId?: string; isShared?: boolean }
   ) {
     const response = await this.client.post('/environments', data);
     return response.data;
@@ -238,6 +253,34 @@ class ApiService {
 
   async deleteEnvironmentVariable(variableId: string) {
     const response = await this.client.delete(`/environments/${variableId}`);
+    return response.data;
+  }
+
+  async getSharedVariables(projectId: string, excludeServiceId?: string) {
+    const params = new URLSearchParams();
+    params.append('projectId', projectId);
+    if (excludeServiceId) params.append('excludeServiceId', excludeServiceId);
+    const response = await this.client.get(`/environments/shared?${params.toString()}`);
+    return response.data;
+  }
+
+  async getEnvVarReferences(serviceId: string) {
+    const response = await this.client.get(`/environments/references?serviceId=${serviceId}`);
+    return response.data;
+  }
+
+  async createEnvVarReference(data: {
+    serviceId: string;
+    sourceServiceId: string;
+    key: string;
+    alias?: string;
+  }) {
+    const response = await this.client.post('/environments/references', data);
+    return response.data;
+  }
+
+  async deleteEnvVarReference(referenceId: string) {
+    const response = await this.client.delete(`/environments/references/${referenceId}`);
     return response.data;
   }
 
@@ -307,6 +350,52 @@ class ApiService {
     const response = await this.client.get(
       `/github/installations/${installationId}/repos/${owner}/${repo}/branches`
     );
+    return response.data;
+  }
+
+  // Template endpoints
+  async getTemplates(category?: string) {
+    const params = category ? { category } : {};
+    const response = await this.client.get('/templates', { params });
+    return response.data;
+  }
+
+  async getTemplate(id: string) {
+    const response = await this.client.get(`/templates/${id}`);
+    return response.data;
+  }
+
+  async getTemplateBySlug(slug: string) {
+    const response = await this.client.get(`/templates/slug/${slug}`);
+    return response.data;
+  }
+
+  async deployTemplate(projectId: string, data: {
+    templateId: string;
+    inputs?: Record<string, string>;
+  }) {
+    const response = await this.client.post(`/projects/${projectId}/templates/deploy`, data);
+    return response.data;
+  }
+
+  async getTemplateDeployments(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/templates/deployments`);
+    return response.data;
+  }
+
+  async getTemplateDeployment(projectId: string, deploymentId: string) {
+    const response = await this.client.get(`/projects/${projectId}/templates/deployments/${deploymentId}`);
+    return response.data;
+  }
+
+  // Volume endpoints
+  async getVolumes(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/volumes`);
+    return response.data;
+  }
+
+  async getVolume(projectId: string, id: string) {
+    const response = await this.client.get(`/projects/${projectId}/volumes/${id}`);
     return response.data;
   }
 }

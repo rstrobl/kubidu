@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Logger,
   Inject,
   forwardRef,
@@ -162,10 +163,47 @@ export class ServicesService {
       throw new ForbiddenException('You do not have permission to access this project');
     }
 
-    return this.prisma.service.findMany({
+    // Get services with consuming references for canvas connections
+    const services = await this.prisma.service.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        consumingReferences: {
+          select: {
+            key: true,
+            sourceServiceId: true,
+          },
+        },
+      },
     });
+
+    // Get volumes for this project grouped by serviceId
+    const volumes = await this.prisma.volume.findMany({
+      where: { projectId },
+      select: {
+        id: true,
+        name: true,
+        serviceId: true,
+        size: true,
+        mountPath: true,
+        status: true,
+      },
+    });
+
+    // Attach volumes to services
+    const volumesByService = new Map<string, typeof volumes>();
+    for (const volume of volumes) {
+      if (volume.serviceId) {
+        const existing = volumesByService.get(volume.serviceId) || [];
+        existing.push(volume);
+        volumesByService.set(volume.serviceId, existing);
+      }
+    }
+
+    return services.map((service) => ({
+      ...service,
+      volumes: volumesByService.get(service.id) || [],
+    }));
   }
 
   async findOne(userId: string, projectId: string, serviceId: string): Promise<Service> {
@@ -246,6 +284,8 @@ export class ServicesService {
         }),
         ...(updateServiceDto.autoDeploy !== undefined && { autoDeploy: updateServiceDto.autoDeploy }),
         ...(updateServiceDto.status !== undefined && { status: updateServiceDto.status as any }),
+        ...(updateServiceDto.canvasX !== undefined && { canvasX: updateServiceDto.canvasX }),
+        ...(updateServiceDto.canvasY !== undefined && { canvasY: updateServiceDto.canvasY }),
       },
     });
 
@@ -298,6 +338,44 @@ export class ServicesService {
     });
 
     this.logger.log(`Service deleted: ${serviceId} by user: ${userId}`);
+  }
+
+  async removeMany(userId: string, projectId: string, serviceIds: string[]): Promise<{ deleted: number }> {
+    // Validate project ownership once
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Verify all services belong to this project
+    const services = await this.prisma.service.findMany({
+      where: {
+        id: { in: serviceIds },
+        projectId,
+      },
+      select: { id: true },
+    });
+
+    const foundIds = new Set(services.map((s) => s.id));
+    const missingIds = serviceIds.filter((id) => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      throw new NotFoundException(`Services not found: ${missingIds.join(', ')}`);
+    }
+
+    // Delete all services in a single transaction
+    const result = await this.prisma.service.deleteMany({
+      where: {
+        id: { in: serviceIds },
+        projectId,
+      },
+    });
+
+    this.logger.log(`Deleted ${result.count} services from project ${projectId} by user ${userId}`);
+
+    return { deleted: result.count };
   }
 
   private async autoDeployGitHubService(

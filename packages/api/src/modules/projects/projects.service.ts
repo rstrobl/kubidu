@@ -78,6 +78,23 @@ export class ProjectsService {
               orderBy: { createdAt: 'desc' },
               take: 5,
             },
+            consumingReferences: {
+              select: {
+                id: true,
+                sourceServiceId: true,
+                key: true,
+                alias: true,
+              },
+            },
+            volumes: {
+              select: {
+                id: true,
+                name: true,
+                size: true,
+                mountPath: true,
+                status: true,
+              },
+            },
           },
         },
       },

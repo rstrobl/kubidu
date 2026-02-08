@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { DeployConsumer } from '../queue-consumers/deploy.consumer';
+import { TemplateConsumer } from '../queue-consumers/template.consumer';
 import { KubernetesClient } from '../k8s/client';
 import { NamespaceManager } from '../k8s/namespace.manager';
 import { SecretManager } from '../k8s/secret.manager';
@@ -14,6 +15,9 @@ import { LogsController } from '../logs/logs.controller';
     BullModule.registerQueue({
       name: 'deploy',
     }),
+    BullModule.registerQueue({
+      name: 'template',
+    }),
   ],
   controllers: [LogsController],
   providers: [
@@ -24,6 +28,7 @@ import { LogsController } from '../logs/logs.controller';
     SecretManager,
     DeploymentManager,
     DeployConsumer,
+    TemplateConsumer,
   ],
   exports: [KubernetesClient, NamespaceManager, SecretManager, DeploymentManager],
 })

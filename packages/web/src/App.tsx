@@ -9,6 +9,8 @@ import { Projects } from './pages/Projects';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { NewProject } from './pages/NewProject';
 import { GitHubCallback } from './pages/GitHubCallback';
+import { Settings } from './pages/Settings';
+import { ProjectLogs } from './pages/ProjectLogs';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,7 +82,9 @@ function App() {
             <Route path="dashboard" element={<DefaultRedirect />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/new" element={<NewProject />} />
+            <Route path="projects/:id/logs" element={<ProjectLogs />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<DefaultRedirect />} />

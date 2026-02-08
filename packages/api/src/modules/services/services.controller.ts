@@ -104,4 +104,16 @@ export class ServicesController {
   ) {
     await this.servicesService.remove(req.user.id, projectId, id);
   }
+
+  @Delete()
+  @ApiOperation({ summary: 'Delete multiple services' })
+  @ApiResponse({ status: 200, description: 'Services deleted successfully' })
+  @ApiResponse({ status: 404, description: 'One or more services not found' })
+  async removeMany(
+    @Req() req,
+    @Param('projectId') projectId: string,
+    @Body() body: { serviceIds: string[] },
+  ) {
+    return this.servicesService.removeMany(req.user.id, projectId, body.serviceIds);
+  }
 }

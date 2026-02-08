@@ -351,6 +351,7 @@ services:
       - /app/packages/web/node_modules
       - /app/packages/shared/node_modules
       - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
     command: sh -c "npm install && cd /app/packages/shared && npm run build && cd /app/packages/web && npm run dev -- --host 0.0.0.0"
     depends_on:
       - api

@@ -62,6 +62,44 @@ export class SecretManager {
   }
 
   /**
+   * Create or update a secret with plain text environment variables
+   * Used by template deployments where values aren't pre-encrypted
+   */
+  async createOrUpdateSecretFromPlaintext(
+    namespace: string,
+    secretName: string,
+    envVars: Record<string, string>,
+    labels?: Record<string, string>,
+  ): Promise<void> {
+    const secret: V1Secret = {
+      metadata: {
+        name: secretName,
+        namespace,
+        labels: {
+          'kubidu.io/managed': 'true',
+          ...labels,
+        },
+      },
+      type: 'Opaque',
+      stringData: envVars,
+    };
+
+    try {
+      // Try to update existing secret
+      await this.k8sClient.coreApi.replaceNamespacedSecret(secretName, namespace, secret);
+      this.logger.log(`Updated secret ${secretName} in namespace ${namespace}`);
+    } catch (error) {
+      if (error.response?.statusCode === 404) {
+        // Create new secret
+        await this.k8sClient.coreApi.createNamespacedSecret(namespace, secret);
+        this.logger.log(`Created secret ${secretName} in namespace ${namespace}`);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Delete a secret
    */
   async deleteSecret(namespace: string, secretName: string): Promise<void> {

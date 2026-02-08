@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api.service';
 import { GitHubRepoPicker } from './GitHubRepoPicker';
+import { Template } from '@kubidu/shared';
 
 interface AddServiceModalProps {
   projectId: string;
@@ -18,11 +19,36 @@ interface GitHubSelection {
 }
 
 export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddServiceModalProps) {
-  const [serviceType, setServiceType] = useState<'GITHUB' | 'DOCKER_IMAGE'>('GITHUB');
+  const [serviceType, setServiceType] = useState<'GITHUB' | 'DOCKER_IMAGE' | 'TEMPLATE'>('GITHUB');
   const [dockerImage, setDockerImage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const submittingRef = useRef(false);
+
+  // Template state
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [templateInputs, setTemplateInputs] = useState<Record<string, string>>({});
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Load templates when template type is selected
+  useEffect(() => {
+    if (serviceType === 'TEMPLATE' && templates.length === 0) {
+      loadTemplates();
+    }
+  }, [serviceType]);
+
+  const loadTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const data = await apiService.getTemplates();
+      setTemplates(data);
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -41,6 +67,8 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
       setDockerImage('');
       setError('');
       submittingRef.current = false;
+      setSelectedTemplate(null);
+      setTemplateInputs({});
     }
   }, [isOpen]);
 
@@ -114,12 +142,60 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
     });
   };
 
+  const handleTemplateSubmit = async () => {
+    if (!selectedTemplate) {
+      setError('Please select a template');
+      return;
+    }
+
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      await apiService.deployTemplate(projectId, {
+        templateId: selectedTemplate.id,
+        inputs: templateInputs,
+      });
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to deploy template');
+    } finally {
+      setIsSubmitting(false);
+      submittingRef.current = false;
+    }
+  };
+
   const generateDockerName = (): string => {
     if (dockerImage) {
       const imageWithoutRegistry = dockerImage.split('/').pop() || dockerImage;
       return imageWithoutRegistry.split(':')[0];
     }
     return '';
+  };
+
+  const renderTemplateIcon = (template: Template) => {
+    const icon = template.icon;
+    // Check if icon is a URL
+    if (icon && (icon.startsWith('http://') || icon.startsWith('https://'))) {
+      return <img src={icon} alt={template.name} className="w-8 h-8" />;
+    }
+    // Fallback to emoji or default
+    if (icon) {
+      return <span className="text-2xl">{icon}</span>;
+    }
+    // Default icons by category
+    const defaultIcons: Record<string, string> = {
+      database: '🗄️',
+      cms: '📝',
+      cache: '⚡',
+      messaging: '📨',
+      monitoring: '📊',
+      automation: '🔄',
+    };
+    return <span className="text-2xl">{defaultIcons[template.category || ''] || '📦'}</span>;
   };
 
   if (!isOpen) return null;
@@ -134,7 +210,7 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Add Service</h2>
@@ -150,7 +226,7 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
           </div>
 
           {/* Body */}
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 overflow-y-auto flex-1">
             {error && (
               <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
                 {error}
@@ -162,7 +238,7 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Service Type
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setServiceType('GITHUB')}
@@ -172,8 +248,11 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  <div className="font-medium">GitHub Repository</div>
-                  <div className="text-sm text-gray-500 mt-1">Deploy from a Git repo</div>
+                  <svg className="w-8 h-8 mx-auto mb-2 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                  </svg>
+                  <div className="font-medium">GitHub</div>
+                  <div className="text-xs text-gray-500 mt-1">Deploy from Git</div>
                 </button>
                 <button
                   type="button"
@@ -184,8 +263,29 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  <div className="font-medium">Docker Image</div>
-                  <div className="text-sm text-gray-500 mt-1">Deploy a pre-built image</div>
+                  <svg className="w-8 h-8 mx-auto mb-2 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.186m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.185-.186H5.136a.186.186 0 00-.186.185v1.888c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 003.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z" />
+                  </svg>
+                  <div className="font-medium">Docker</div>
+                  <div className="text-xs text-gray-500 mt-1">Deploy an image</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceType('TEMPLATE')}
+                  className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    serviceType === 'TEMPLATE'
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <svg className="w-8 h-8 mx-auto mb-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <div className="font-medium">Template</div>
+                  <div className="text-xs text-gray-500 mt-1">One-click apps</div>
                 </button>
               </div>
             </div>
@@ -226,6 +326,71 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
               </div>
             )}
 
+            {/* Template Selection */}
+            {serviceType === 'TEMPLATE' && (
+              <div>
+                {loadingTemplates ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-500">Loading templates...</p>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No templates available yet.</p>
+                    <p className="text-sm mt-1">Templates will be added soon!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        onClick={() => setSelectedTemplate(template)}
+                        className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
+                          selectedTemplate?.id === template.id
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <span className="mr-3 flex items-center justify-center w-8 h-8">{renderTemplateIcon(template)}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900">{template.name}</span>
+                              {template.isOfficial && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Official</span>
+                              )}
+                              {template.category && (
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">{template.category}</span>
+                              )}
+                            </div>
+                            {template.description && (
+                              <p className="text-sm text-gray-500 mt-1">{template.description}</p>
+                            )}
+                          </div>
+                          <svg className={`w-5 h-5 ${selectedTemplate?.id === template.id ? 'text-primary-600' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Template details & inputs would go here when selected */}
+                {selectedTemplate && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Deploy {selectedTemplate.name}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      This will create {(selectedTemplate.definition as any)?.services?.length || 0} service(s) in your project.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Generated Name Preview (Docker only — GitHub submits immediately) */}
             {serviceType === 'DOCKER_IMAGE' && generateDockerName() && (
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
@@ -252,6 +417,15 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                 disabled={isSubmitting || !generateDockerName()}
               >
                 {isSubmitting ? 'Creating...' : 'Create Service'}
+              </button>
+            )}
+            {serviceType === 'TEMPLATE' && (
+              <button
+                onClick={handleTemplateSubmit}
+                className="btn btn-primary"
+                disabled={isSubmitting || !selectedTemplate}
+              >
+                {isSubmitting ? 'Deploying...' : 'Deploy Template'}
               </button>
             )}
           </div>

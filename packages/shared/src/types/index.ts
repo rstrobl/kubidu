@@ -75,6 +75,9 @@ export interface Service {
   dockerImage: string | null;
   dockerTag: string | null;
 
+  // Template-related fields
+  templateDeploymentId: string | null;
+
   // Default service configuration
   defaultPort: number;
   defaultReplicas: number;
@@ -93,6 +96,20 @@ export interface Service {
 export enum ServiceType {
   GITHUB = 'GITHUB',
   DOCKER_IMAGE = 'DOCKER_IMAGE',
+}
+
+export enum TemplateDeploymentStatus {
+  PENDING = 'PENDING',
+  DEPLOYING = 'DEPLOYING',
+  DEPLOYED = 'DEPLOYED',
+  FAILED = 'FAILED',
+}
+
+export enum VolumeStatus {
+  PENDING = 'PENDING',
+  BOUND = 'BOUND',
+  RELEASED = 'RELEASED',
+  FAILED = 'FAILED',
 }
 
 export enum ServiceStatus {
@@ -545,4 +562,80 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+}
+
+// Template types
+export interface Template {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  category: string | null;
+  definition: TemplateDefinition;
+  isOfficial: boolean;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TemplateDefinition {
+  services: TemplateServiceDef[];
+}
+
+export interface TemplateServiceDef {
+  name: string;
+  image: string;
+  tag?: string;
+  command?: string[]; // Container command (entrypoint override)
+  args?: string[]; // Container args
+  env?: Record<string, TemplateEnvValue>;
+  volumes?: TemplateVolumeDef[];
+  port?: number;
+  public?: boolean;
+  replicas?: number;
+  cpuLimit?: string;
+  memoryLimit?: string;
+}
+
+export type TemplateEnvValue =
+  | string // static value
+  | { generate: 'secret' | 'uuid' } // generate: secret (random), uuid
+  | { ref: string } // ref: "mysql.env.PASSWORD" or "mysql.hostname"
+  | { input: { label: string; default?: string; required?: boolean } }; // user input
+
+export interface TemplateVolumeDef {
+  name: string;
+  mountPath: string;
+  size: string; // e.g., "10Gi"
+}
+
+export interface TemplateDeployment {
+  id: string;
+  templateId: string;
+  projectId: string;
+  status: TemplateDeploymentStatus;
+  statusMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DeployTemplateRequest {
+  templateId: string;
+  inputs?: Record<string, string>; // User-provided values for { input: ... } env vars
+}
+
+// Volume types
+export interface Volume {
+  id: string;
+  projectId: string;
+  serviceId: string | null;
+  templateDeploymentId: string | null;
+  name: string;
+  mountPath: string;
+  size: string;
+  status: VolumeStatus;
+  boundAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }

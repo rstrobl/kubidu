@@ -26,4 +26,9 @@ export class SetEnvironmentVariableDto {
   @IsBoolean()
   @IsOptional()
   isSecret?: boolean;
+
+  @ApiProperty({ example: false, required: false, description: 'Share this variable with other services in the project' })
+  @IsBoolean()
+  @IsOptional()
+  isShared?: boolean;
 }

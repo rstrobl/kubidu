@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
-import { useAuthStore } from '../stores/auth.store';
 
 export function Projects() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

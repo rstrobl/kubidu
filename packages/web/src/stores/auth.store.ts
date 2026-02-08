@@ -4,7 +4,11 @@ import { apiService } from '../services/api.service';
 interface User {
   id: string;
   email: string;
-  fullName?: string;
+  name?: string | null;
+  avatarUrl?: string | null;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
+  createdAt?: string;
 }
 
 interface AuthState {

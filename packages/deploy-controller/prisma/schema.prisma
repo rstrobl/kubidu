@@ -27,6 +27,20 @@ enum ServiceType {
   DOCKER_IMAGE
 }
 
+enum TemplateDeploymentStatus {
+  PENDING
+  DEPLOYING
+  DEPLOYED
+  FAILED
+}
+
+enum VolumeStatus {
+  PENDING
+  BOUND
+  RELEASED
+  FAILED
+}
+
 enum ServiceStatus {
   ACTIVE
   INACTIVE
@@ -120,8 +134,10 @@ model Project {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   deletedAt   DateTime?     @map("deleted_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  services Service[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services            Service[]
+  templateDeployments TemplateDeployment[]
+  volumes             Volume[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -165,8 +181,17 @@ model Service {
   url String? @map("url")
 
   autoDeploy Boolean  @default(true) @map("auto_deploy")
+
+  // Canvas position for visual layout
+  canvasX Float? @default(0) @map("canvas_x")
+  canvasY Float? @default(0) @map("canvas_y")
+
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Link to template deployment (null for manually created services)
+  templateDeploymentId String?             @map("template_deployment_id")
+  templateDeployment   TemplateDeployment? @relation(fields: [templateDeploymentId], references: [id], onDelete: SetNull)
 
   project              Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   githubInstallation   GitHubInstallation?   @relation(fields: [githubInstallationId], references: [id], onDelete: SetNull)
@@ -175,10 +200,14 @@ model Service {
   domains              Domain[]
   buildQueue           BuildQueue[]
   webhookEvents        WebhookEvent[]
+  consumingReferences  EnvVarReference[]     @relation("consumingReferences")
+  providingReferences  EnvVarReference[]     @relation("providingReferences")
+  volumes              Volume[]
 
   @@index([projectId])
   @@index([projectId, status])
   @@index([githubInstallationId])
+  @@index([templateDeploymentId])
   @@map("services")
 }
 
@@ -260,6 +289,7 @@ model EnvironmentVariable {
   valueIv        String    @map("value_iv")
   isSecret       Boolean   @default(true) @map("is_secret")
   isSystem       Boolean   @default(false) @map("is_system")
+  isShared       Boolean   @default(false) @map("is_shared")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -450,6 +480,24 @@ model GdprDataRequest {
   @@map("gdpr_data_requests")
 }
 
+// Environment variable references (cross-service sharing)
+model EnvVarReference {
+  id              String   @id @default(uuid())
+  serviceId       String   @map("service_id")
+  sourceServiceId String   @map("source_service_id")
+  key             String
+  alias           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  service       Service @relation("consumingReferences", fields: [serviceId], references: [id], onDelete: Cascade)
+  sourceService Service @relation("providingReferences", fields: [sourceServiceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, sourceServiceId, key])
+  @@index([serviceId])
+  @@index([sourceServiceId])
+  @@map("env_var_references")
+}
+
 // Notifications
 model Notification {
   id        String    @id @default(uuid())
@@ -465,4 +513,81 @@ model Notification {
 
   @@index([userId, read])
   @@map("notifications")
+}
+
+// Templates (pre-defined multi-service application stacks)
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?  // URL or emoji
+  category    String?  // "database", "cms", "backend", etc.
+
+  // Template definition (JSON) - services, env vars, volumes
+  definition  Json
+
+  // Metadata
+  isOfficial  Boolean  @default(false) @map("is_official")
+  isPublic    Boolean  @default(true) @map("is_public")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  deployments TemplateDeployment[]
+
+  @@index([category])
+  @@index([isPublic])
+  @@map("templates")
+}
+
+// Template deployments (instances of templates in projects)
+model TemplateDeployment {
+  id            String                   @id @default(uuid())
+  templateId    String                   @map("template_id")
+  projectId     String                   @map("project_id")
+
+  status        TemplateDeploymentStatus @default(PENDING)
+  statusMessage String?                  @map("status_message")
+
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  template      Template                 @relation(fields: [templateId], references: [id])
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  services      Service[]
+  volumes       Volume[]
+
+  @@index([templateId])
+  @@index([projectId])
+  @@index([status])
+  @@map("template_deployments")
+}
+
+// Volumes (persistent storage for services)
+model Volume {
+  id                   String              @id @default(uuid())
+  projectId            String              @map("project_id")
+  serviceId            String?             @map("service_id")
+  templateDeploymentId String?             @map("template_deployment_id")
+
+  name                 String
+  mountPath            String              @map("mount_path")
+  size                 String              // e.g., "10Gi"
+
+  status               VolumeStatus        @default(PENDING)
+  boundAt              DateTime?           @map("bound_at")
+
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  project              Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  service              Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  templateDeployment   TemplateDeployment? @relation(fields: [templateDeploymentId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@index([serviceId])
+  @@index([templateDeploymentId])
+  @@map("volumes")
 }

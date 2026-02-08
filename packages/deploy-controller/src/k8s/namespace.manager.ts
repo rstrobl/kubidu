@@ -23,7 +23,8 @@ export class NamespaceManager {
       if (error.response?.statusCode === 404) {
         // Create namespace
         await this.createNamespace(namespaceName, userId);
-        await this.createResourceQuota(namespaceName);
+        // Note: Resource quotas disabled - enforce limits at application/billing level instead
+        // await this.createResourceQuota(namespaceName);
         this.logger.log(`Created namespace ${namespaceName} for user ${userId}`);
         return namespaceName;
       }

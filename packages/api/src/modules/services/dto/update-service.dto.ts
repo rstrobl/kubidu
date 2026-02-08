@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsBoolean,
   IsInt,
+  IsNumber,
   Min,
   Max,
   IsEnum,
@@ -88,4 +89,14 @@ export class UpdateServiceDto {
   @IsEnum(ServiceStatus)
   @IsOptional()
   status?: ServiceStatus;
+
+  @ApiProperty({ example: 0, required: false, description: 'Canvas X position' })
+  @IsNumber()
+  @IsOptional()
+  canvasX?: number;
+
+  @ApiProperty({ example: 0, required: false, description: 'Canvas Y position' })
+  @IsNumber()
+  @IsOptional()
+  canvasY?: number;
 }

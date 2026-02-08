@@ -80,6 +80,44 @@ export class DeployConsumer {
         envVarMap.set(envVar.key, envVar);
       });
 
+      // Resolve cross-service environment variable references
+      const references = await this.prisma.envVarReference.findMany({
+        where: { serviceId: deployment.service.id },
+        include: {
+          sourceService: {
+            include: {
+              environmentVariables: {
+                where: { deploymentId: null },
+              },
+            },
+          },
+        },
+      });
+
+      for (const ref of references) {
+        const injectedKey = ref.alias || ref.key;
+        // Local variables take precedence — skip if already defined
+        if (envVarMap.has(injectedKey)) {
+          continue;
+        }
+        const sourceVar = ref.sourceService.environmentVariables.find(
+          (v: any) => v.key === ref.key,
+        );
+        if (sourceVar) {
+          envVarMap.set(injectedKey, sourceVar);
+          this.logger.log(
+            `Injected referenced var "${ref.key}" from service ${ref.sourceServiceId} as "${injectedKey}"`,
+          );
+        } else {
+          this.logger.warn(
+            `Referenced var "${ref.key}" not found on source service ${ref.sourceServiceId}`,
+          );
+        }
+      }
+
+      // Resolve inline ${{ServiceName.VAR}} tokens in env var values
+      await this.resolveTokensInValues(envVarMap, deployment.service.id);
+
       const allEnvVars = Array.from(envVarMap.values());
 
       // Create or update secret with environment variables
@@ -155,8 +193,8 @@ export class DeployConsumer {
         const publicDomain = primaryCustomDomain || config.subdomain;
 
         if (publicDomain) {
-          const protocol = primaryCustomDomain ? 'https' : 'http';
-          const url = `${protocol}://${publicDomain}`;
+          // Always use HTTPS - traefik handles TLS for all domains
+          const url = `https://${publicDomain}`;
 
           await this.prisma.service.update({
             where: { id: deployment.serviceId },
@@ -384,6 +422,119 @@ export class DeployConsumer {
         return JSON.stringify(status, null, 2);
       } catch {
         return '';
+      }
+    }
+  }
+
+  /**
+   * Resolve inline ${{ServiceName.VAR_KEY}} tokens in environment variable values.
+   * For each env var in the map, if its decrypted value contains tokens, look up
+   * the source variable, decrypt it, substitute the token, and re-encrypt.
+   */
+  private async resolveTokensInValues(
+    envVarMap: Map<string, any>,
+    serviceId: string,
+  ): Promise<void> {
+    const tokenRegex = /\$\{\{([^}]+)\}\}/g;
+
+    // Get the service's project and all sibling services with their env vars
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: { project: true },
+    });
+    if (!service) return;
+
+    const projectServices = await this.prisma.service.findMany({
+      where: { projectId: service.projectId },
+      include: {
+        environmentVariables: {
+          where: { deploymentId: null },
+        },
+      },
+    });
+
+    // Build name→service map
+    const nameToService = new Map<string, typeof projectServices[0]>();
+    for (const s of projectServices) {
+      nameToService.set(s.name, s);
+    }
+
+    for (const [key, envVar] of envVarMap.entries()) {
+      if (!envVar.valueEncrypted || !envVar.valueIv) continue;
+
+      // Decrypt the value
+      let decryptedValue: string;
+      try {
+        const [iv, authTag] = envVar.valueIv.split(':');
+        decryptedValue = this.encryptionService.decrypt(envVar.valueEncrypted, iv, authTag);
+      } catch {
+        continue;
+      }
+
+      // Check if value contains any tokens
+      if (!decryptedValue.includes('${{')) continue;
+
+      let resolved = decryptedValue;
+      let hasResolutions = false;
+      let match: RegExpExecArray | null;
+
+      // Reset regex
+      tokenRegex.lastIndex = 0;
+
+      // Collect all matches first to avoid regex state issues during replacement
+      const matches: { fullMatch: string; inner: string }[] = [];
+      while ((match = tokenRegex.exec(decryptedValue)) !== null) {
+        matches.push({ fullMatch: match[0], inner: match[1].trim() });
+      }
+
+      for (const { fullMatch, inner } of matches) {
+        const dotIndex = inner.indexOf('.');
+        if (dotIndex === -1) continue;
+
+        const sourceName = inner.slice(0, dotIndex);
+        const sourceKey = inner.slice(dotIndex + 1);
+        const sourceService = nameToService.get(sourceName);
+        if (!sourceService) {
+          this.logger.warn(`Token resolution: service "${sourceName}" not found in project`);
+          continue;
+        }
+
+        const sourceVar = sourceService.environmentVariables.find(
+          (v: any) => v.key === sourceKey,
+        );
+        if (!sourceVar || !sourceVar.valueEncrypted || !sourceVar.valueIv) {
+          this.logger.warn(`Token resolution: variable "${sourceKey}" not found on service "${sourceName}"`);
+          continue;
+        }
+
+        // Decrypt source value
+        try {
+          const [srcIv, srcAuthTag] = sourceVar.valueIv.split(':');
+          const sourceValue = this.encryptionService.decrypt(
+            sourceVar.valueEncrypted,
+            srcIv,
+            srcAuthTag,
+          );
+          resolved = resolved.replace(fullMatch, sourceValue);
+          hasResolutions = true;
+          this.logger.log(
+            `Resolved token $\{\{${sourceName}.${sourceKey}\}\} in env var "${key}"`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to decrypt source var "${sourceKey}" from service "${sourceName}": ${error.message}`,
+          );
+        }
+      }
+
+      // Re-encrypt the resolved value and update the map entry
+      if (hasResolutions) {
+        const { encrypted, iv, authTag } = this.encryptionService.encrypt(resolved);
+        envVarMap.set(key, {
+          ...envVar,
+          valueEncrypted: encrypted,
+          valueIv: `${iv}:${authTag}`,
+        });
       }
     }
   }
