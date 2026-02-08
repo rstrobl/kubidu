@@ -95,10 +95,20 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!@kubidu)"
+    ],
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.d.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"

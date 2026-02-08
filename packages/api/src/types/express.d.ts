@@ -1,10 +1,22 @@
-import { User } from '../database/entities/user.entity';
-
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: {
+        id: string;
+        email: string;
+        name?: string | null;
+      };
       requestId?: string;
     }
   }
+}
+
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  name?: string | null;
+}
+
+export interface AuthenticatedRequest extends Express.Request {
+  user: AuthenticatedUser;
 }

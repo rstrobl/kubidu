@@ -1,4 +1,9 @@
-export function formatDistanceToNow(date: Date): string {
+export interface FormatDistanceOptions {
+  style?: 'short' | 'long';
+}
+
+export function formatDistanceToNow(date: Date, options: FormatDistanceOptions = {}): string {
+  const { style = 'short' } = options;
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -8,22 +13,35 @@ export function formatDistanceToNow(date: Date): string {
 
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
-    return `${diffInMinutes}m ago`;
+    return style === 'long'
+      ? `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`
+      : `${diffInMinutes}m ago`;
   }
 
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
-    return `${diffInHours}h ago`;
+    return style === 'long'
+      ? `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`
+      : `${diffInHours}h ago`;
   }
 
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
-    return `${diffInDays}d ago`;
+    return style === 'long'
+      ? `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`
+      : `${diffInDays}d ago`;
   }
 
   const diffInWeeks = Math.floor(diffInDays / 7);
   if (diffInWeeks < 4) {
-    return `${diffInWeeks}w ago`;
+    return style === 'long'
+      ? `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'} ago`
+      : `${diffInWeeks}w ago`;
+  }
+
+  // For older dates, show the formatted date
+  if (style === 'long') {
+    return new Date(date).toLocaleDateString();
   }
 
   const diffInMonths = Math.floor(diffInDays / 30);

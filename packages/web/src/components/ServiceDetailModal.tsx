@@ -3,6 +3,7 @@ import { apiService } from '../services/api.service';
 import { useEnvVarAutocomplete } from '../hooks/useEnvVarAutocomplete';
 import { EnvVarAutocomplete } from './EnvVarAutocomplete';
 import { EnvVarValueDisplay } from './EnvVarValueDisplay';
+import { formatDistanceToNow } from '../utils/date';
 
 interface ServiceDetailModalProps {
   projectId: string;
@@ -14,38 +15,9 @@ interface ServiceDetailModalProps {
   onTabChange?: (tab: string) => void;
 }
 
-// Helper function to format relative time
+// Helper wrapper to handle string dates
 function formatRelativeTime(date: string | Date): string {
-  const now = new Date();
-  const past = new Date(date);
-  const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-  if (seconds < 60) {
-    return 'just now';
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-  }
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) {
-    return `${days} day${days === 1 ? '' : 's'} ago`;
-  }
-
-  const weeks = Math.floor(days / 7);
-  if (weeks < 4) {
-    return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
-  }
-
-  // For older items, show the date
-  return past.toLocaleDateString();
+  return formatDistanceToNow(new Date(date), { style: 'long' });
 }
 
 // Sub-component for editing env var rows (needed for hooks inside .map())
