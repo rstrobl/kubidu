@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as speakeasy from 'speakeasy';
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly encryptionService: EncryptionService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -396,5 +398,155 @@ export class AuthService {
     });
 
     this.logger.log(`2FA disabled for user: ${user.id}`);
+  }
+
+  /**
+   * Login or register a user via GitHub OAuth
+   */
+  async loginWithGitHub(
+    code: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthResponse & { isNewUser: boolean }> {
+    const clientId = this.configService.get<string>('github.oauthClientId');
+    const clientSecret = this.configService.get<string>('github.oauthClientSecret');
+
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      throw new UnauthorizedException(`GitHub OAuth error: ${tokenData.error_description}`);
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // Get user info from GitHub
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const githubUser = await userResponse.json();
+
+    // Get user emails (in case primary email is private)
+    const emailsResponse = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const emails = await emailsResponse.json();
+    const primaryEmail = emails.find((e: any) => e.primary)?.email || githubUser.email;
+
+    if (!primaryEmail) {
+      throw new BadRequestException('Unable to get email from GitHub account');
+    }
+
+    // Check if user exists
+    let user = await this.prisma.user.findUnique({
+      where: { email: primaryEmail },
+    });
+
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new user
+      isNewUser = true;
+
+      // Generate a random password (user won't use it for OAuth login)
+      const randomPassword = require('crypto').randomBytes(32).toString('hex');
+      const passwordHash = await bcrypt.hash(randomPassword, 12);
+
+      // Generate workspace slug from GitHub username
+      const workspaceSlug = await this.generateUniqueSlug(githubUser.login || 'user');
+
+      user = await this.prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: {
+            email: primaryEmail,
+            passwordHash,
+            name: githubUser.name || githubUser.login,
+            avatarUrl: githubUser.avatar_url,
+            emailVerified: true, // GitHub emails are verified
+            status: 'ACTIVE',
+          },
+        });
+
+        // Create default workspace
+        await tx.workspace.create({
+          data: {
+            name: `${githubUser.login}'s Workspace`,
+            slug: workspaceSlug,
+            avatarUrl: githubUser.avatar_url,
+            members: {
+              create: {
+                userId: newUser.id,
+                role: 'ADMIN',
+              },
+            },
+          },
+        });
+
+        this.logger.log(`New user registered via GitHub: ${newUser.id} (${primaryEmail})`);
+
+        return newUser;
+      });
+    } else {
+      // Update user info from GitHub
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          avatarUrl: githubUser.avatar_url || user.avatarUrl,
+          lastLoginAt: new Date(),
+        },
+      });
+
+      this.logger.log(`User logged in via GitHub: ${user.id} (${primaryEmail})`);
+    }
+
+    const authResponse = await this.generateAuthResponse(user);
+
+    return {
+      ...authResponse,
+      isNewUser,
+    };
+  }
+
+  /**
+   * Generate a unique workspace slug
+   */
+  private async generateUniqueSlug(baseName: string): Promise<string> {
+    const baseSlug = slugify(baseName);
+    let slug = baseSlug;
+    let counter = 0;
+
+    while (true) {
+      const existing = await this.prisma.workspace.findUnique({
+        where: { slug },
+      });
+
+      if (!existing) {
+        return slug;
+      }
+
+      counter++;
+      slug = `${baseSlug}-${counter}`;
+    }
   }
 }

@@ -5,12 +5,16 @@ import {
   UseGuards,
   Get,
   Req,
+  Res,
+  Query,
   HttpCode,
   HttpStatus,
   Ip,
   Headers,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -24,7 +28,10 @@ import { CreateApiKeyDto } from './dto/create-api-key.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -141,5 +148,52 @@ export class AuthController {
       success: true,
       message: 'Two-factor authentication disabled successfully',
     };
+  }
+
+  // GitHub OAuth endpoints
+  @Get('github')
+  @ApiOperation({ summary: 'Initiate GitHub OAuth login' })
+  @ApiResponse({ status: 302, description: 'Redirect to GitHub' })
+  async githubLogin(@Res() res: Response) {
+    const clientId = this.configService.get<string>('github.oauthClientId');
+    const redirectUri = this.configService.get<string>('github.oauthCallbackUrl');
+    const scope = 'read:user user:email';
+
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+
+    res.redirect(authUrl);
+  }
+
+  @Get('github/callback')
+  @ApiOperation({ summary: 'GitHub OAuth callback' })
+  @ApiResponse({ status: 302, description: 'Redirect to app with token' })
+  async githubCallback(
+    @Query('code') code: string,
+    @Query('error') error: string,
+    @Res() res: Response,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    const appUrl = this.configService.get<string>('app.url');
+
+    if (error) {
+      return res.redirect(`${appUrl}/login?error=github_${error}`);
+    }
+
+    try {
+      const result = await this.authService.loginWithGitHub(code, ipAddress, userAgent);
+
+      // Redirect to frontend with tokens
+      const params = new URLSearchParams({
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        isNewUser: result.isNewUser ? 'true' : 'false',
+      });
+
+      res.redirect(`${appUrl}/auth/callback?${params.toString()}`);
+    } catch (err) {
+      console.error('GitHub OAuth error:', err);
+      res.redirect(`${appUrl}/login?error=github_auth_failed`);
+    }
   }
 }

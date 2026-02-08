@@ -18,9 +18,15 @@ export interface Service {
   subdomain?: string;
   url?: string;
   templateDeploymentId?: string;
+  // Autoscaling configuration
+  autoscalingEnabled?: boolean;
+  autoscalingMinReplicas?: number;
+  autoscalingMaxReplicas?: number;
+  autoscalingTargetCPU?: number;
+  autoscalingTargetMemory?: number;
 }
 
-export type TabType = 'overview' | 'settings' | 'env' | 'domains' | 'deployments';
+export type TabType = 'overview' | 'settings' | 'env' | 'domains' | 'deployments' | 'autoscaling';
 
 export interface Deployment {
   id: string;

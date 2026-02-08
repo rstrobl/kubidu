@@ -6,6 +6,7 @@ import { KubernetesClient } from '../k8s/client';
 import { NamespaceManager } from '../k8s/namespace.manager';
 import { SecretManager } from '../k8s/secret.manager';
 import { DeploymentManager } from '../k8s/deployment.manager';
+import { HPAManager } from '../k8s/hpa.manager';
 import { PrismaService } from '../database/prisma.service';
 import { EncryptionService } from '../services/encryption.service';
 import { LogsController } from '../log-streaming/logs.controller';
@@ -30,9 +31,10 @@ import { LogsController } from '../log-streaming/logs.controller';
     NamespaceManager,
     SecretManager,
     DeploymentManager,
+    HPAManager,
     DeployConsumer,
     TemplateConsumer,
   ],
-  exports: [KubernetesClient, NamespaceManager, SecretManager, DeploymentManager],
+  exports: [KubernetesClient, NamespaceManager, SecretManager, DeploymentManager, HPAManager],
 })
 export class DeployModule {}

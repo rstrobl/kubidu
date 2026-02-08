@@ -99,4 +99,38 @@ export class UpdateServiceDto {
   @IsNumber()
   @IsOptional()
   canvasY?: number;
+
+  // Autoscaling configuration
+  @ApiProperty({ example: false, required: false, description: 'Enable horizontal pod autoscaling' })
+  @IsBoolean()
+  @IsOptional()
+  autoscalingEnabled?: boolean;
+
+  @ApiProperty({ example: 1, required: false, description: 'Minimum number of replicas when autoscaling' })
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  autoscalingMinReplicas?: number;
+
+  @ApiProperty({ example: 10, required: false, description: 'Maximum number of replicas when autoscaling' })
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  autoscalingMaxReplicas?: number;
+
+  @ApiProperty({ example: 70, required: false, description: 'Target CPU utilization percentage for autoscaling' })
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  autoscalingTargetCPU?: number;
+
+  @ApiProperty({ example: 80, required: false, description: 'Target memory utilization percentage for autoscaling (optional)' })
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  autoscalingTargetMemory?: number;
 }

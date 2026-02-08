@@ -101,10 +101,10 @@ export class ServicesService {
       WorkspaceRole.MEMBER,
     ]);
 
-    // Get project info for notifications
+    // Get project info for notifications and subdomain generation
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, slug: true },
     });
 
     // Check if service name already exists in this project
@@ -120,6 +120,12 @@ export class ServicesService {
         `Service with name "${createServiceDto.name}" already exists in this project`,
       );
     }
+
+    // Generate auto subdomain: {service-name}-{project-slug}
+    const autoSubdomain = await this.generateUniqueSubdomain(
+      createServiceDto.name,
+      project?.slug || projectId.slice(0, 8),
+    );
 
     // Auto-detect port from Docker image if not provided
     let defaultPort = createServiceDto.defaultPort || 8080;
@@ -157,6 +163,7 @@ export class ServicesService {
         defaultMemoryRequest: createServiceDto.defaultMemoryRequest || '128Mi',
         defaultHealthCheckPath: createServiceDto.defaultHealthCheckPath || '/',
         autoDeploy: createServiceDto.autoDeploy !== undefined ? createServiceDto.autoDeploy : true,
+        subdomain: autoSubdomain,
         status: 'ACTIVE',
       },
     });
@@ -363,6 +370,12 @@ export class ServicesService {
         ...(updateServiceDto.status !== undefined && { status: updateServiceDto.status as any }),
         ...(updateServiceDto.canvasX !== undefined && { canvasX: updateServiceDto.canvasX }),
         ...(updateServiceDto.canvasY !== undefined && { canvasY: updateServiceDto.canvasY }),
+        // Autoscaling configuration
+        ...(updateServiceDto.autoscalingEnabled !== undefined && { autoscalingEnabled: updateServiceDto.autoscalingEnabled }),
+        ...(updateServiceDto.autoscalingMinReplicas !== undefined && { autoscalingMinReplicas: updateServiceDto.autoscalingMinReplicas }),
+        ...(updateServiceDto.autoscalingMaxReplicas !== undefined && { autoscalingMaxReplicas: updateServiceDto.autoscalingMaxReplicas }),
+        ...(updateServiceDto.autoscalingTargetCPU !== undefined && { autoscalingTargetCPU: updateServiceDto.autoscalingTargetCPU }),
+        ...(updateServiceDto.autoscalingTargetMemory !== undefined && { autoscalingTargetMemory: updateServiceDto.autoscalingTargetMemory }),
       },
     });
 
@@ -588,6 +601,57 @@ export class ServicesService {
     this.logger.log(
       `Auto-deploy enqueued for GitHub service ${service.id}, deployment ${deployment.id}`,
     );
+  }
+
+  /**
+   * Generate a unique subdomain for a service
+   * Format: {service-name}-{project-slug}
+   * If that's taken, append random suffix
+   */
+  private async generateUniqueSubdomain(
+    serviceName: string,
+    projectSlug: string,
+  ): Promise<string> {
+    // Sanitize inputs: lowercase, alphanumeric, hyphens only
+    const sanitize = (s: string) => 
+      s.toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 30);
+
+    const baseName = sanitize(serviceName);
+    const baseSlug = sanitize(projectSlug);
+    let subdomain = `${baseName}-${baseSlug}`;
+
+    // Ensure total length <= 63 characters (DNS limit)
+    if (subdomain.length > 63) {
+      subdomain = subdomain.slice(0, 63).replace(/-$/, '');
+    }
+
+    // Check if subdomain is already taken
+    let candidate = subdomain;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const existing = await this.prisma.service.findFirst({
+        where: { subdomain: candidate },
+      });
+
+      if (!existing) {
+        return candidate;
+      }
+
+      // Append random suffix
+      attempts++;
+      const suffix = Math.random().toString(36).slice(2, 6);
+      candidate = `${subdomain}-${suffix}`.slice(0, 63).replace(/-$/, '');
+    }
+
+    // Fallback: use UUID-based subdomain
+    const uuid = require('crypto').randomUUID().slice(0, 8);
+    return `${baseName}-${uuid}`.slice(0, 63);
   }
 
   /**

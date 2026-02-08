@@ -3,6 +3,7 @@ import {
   CoreV1Api,
   AppsV1Api,
   NetworkingV1Api,
+  AutoscalingV2Api,
 } from '@kubernetes/client-node';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +15,7 @@ export class KubernetesClient {
   public coreApi: CoreV1Api;
   public appsApi: AppsV1Api;
   public networkingApi: NetworkingV1Api;
+  public autoscalingApi: AutoscalingV2Api;
 
   constructor(private configService: ConfigService) {
     this.kubeConfig = new KubeConfig();
@@ -44,6 +46,7 @@ export class KubernetesClient {
     this.coreApi = this.kubeConfig.makeApiClient(CoreV1Api);
     this.appsApi = this.kubeConfig.makeApiClient(AppsV1Api);
     this.networkingApi = this.kubeConfig.makeApiClient(NetworkingV1Api);
+    this.autoscalingApi = this.kubeConfig.makeApiClient(AutoscalingV2Api);
 
     this.logger.log('Kubernetes client initialized');
   }

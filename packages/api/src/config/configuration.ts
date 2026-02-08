@@ -56,6 +56,10 @@ export default () => ({
     webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
     appName: process.env.GITHUB_APP_NAME || 'kubidu',
     callbackUrl: process.env.GITHUB_APP_CALLBACK_URL || 'http://localhost:5173/github/callback',
+    // OAuth for login
+    oauthClientId: process.env.GITHUB_OAUTH_CLIENT_ID || process.env.GITHUB_APP_CLIENT_ID,
+    oauthClientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET || process.env.GITHUB_APP_CLIENT_SECRET,
+    oauthCallbackUrl: process.env.GITHUB_OAUTH_CALLBACK_URL || 'http://localhost:3000/auth/github/callback',
   },
 
   email: {

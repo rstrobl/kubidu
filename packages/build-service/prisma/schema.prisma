@@ -41,6 +41,13 @@ enum VolumeStatus {
   FAILED
 }
 
+enum EnvironmentType {
+  PRODUCTION
+  STAGING
+  DEVELOPMENT
+  PREVIEW
+}
+
 enum NotificationCategory {
   DEPLOYMENT
   BUILD
@@ -213,11 +220,74 @@ model Project {
   services            Service[]
   templateDeployments TemplateDeployment[]
   volumes             Volume[]
+  environments        Environment[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@index([workspaceId, status])
   @@map("projects")
+}
+
+// Environments (Production, Staging, Development, PR-Previews)
+model Environment {
+  id            String          @id @default(uuid())
+  projectId     String          @map("project_id")
+  name          String
+  slug          String
+  type          EnvironmentType @default(DEVELOPMENT)
+  isProduction  Boolean         @default(false) @map("is_production")
+  isDefault     Boolean         @default(false) @map("is_default")
+  color         String?         // UI color for identification (e.g., "#16A34A")
+  
+  // Auto-deploy settings
+  autoDeploy    Boolean         @default(true) @map("auto_deploy")
+  branch        String?         // Git branch to deploy from (e.g., "main", "staging")
+  
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  variables     EnvironmentVar[]
+  deployments   EnvironmentDeployment[]
+  
+  @@unique([projectId, slug])
+  @@index([projectId])
+  @@index([projectId, type])
+  @@map("environments_v2")
+}
+
+// Environment-specific variables (overrides service defaults)
+model EnvironmentVar {
+  id             String      @id @default(uuid())
+  environmentId  String      @map("environment_id")
+  key            String
+  valueEncrypted String      @map("value_encrypted")
+  valueIv        String      @map("value_iv")
+  isSecret       Boolean     @default(true) @map("is_secret")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  
+  environment    Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  
+  @@unique([environmentId, key])
+  @@index([environmentId])
+  @@map("environment_vars")
+}
+
+// Environment-specific deployment tracking
+model EnvironmentDeployment {
+  id            String      @id @default(uuid())
+  environmentId String      @map("environment_id")
+  deploymentId  String      @map("deployment_id")
+  serviceId     String      @map("service_id")
+  isActive      Boolean     @default(false) @map("is_active")
+  deployedAt    DateTime    @default(now()) @map("deployed_at")
+  
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  
+  @@index([environmentId])
+  @@index([serviceId])
+  @@map("environment_deployments")
 }
 
 // Services (GitHub repos or Docker images)
@@ -256,6 +326,13 @@ model Service {
   url String? @map("url")
 
   autoDeploy Boolean  @default(true) @map("auto_deploy")
+
+  // Autoscaling configuration
+  autoscalingEnabled          Boolean @default(false) @map("autoscaling_enabled")
+  autoscalingMinReplicas      Int     @default(1) @map("autoscaling_min_replicas")
+  autoscalingMaxReplicas      Int     @default(10) @map("autoscaling_max_replicas")
+  autoscalingTargetCPU        Int     @default(70) @map("autoscaling_target_cpu")
+  autoscalingTargetMemory     Int?    @map("autoscaling_target_memory")
 
   // Canvas position for visual layout
   canvasX Float? @default(0) @map("canvas_x")

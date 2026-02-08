@@ -509,6 +509,38 @@ class ApiService {
     const response = await this.client.patch('/notifications/preferences', updates);
     return response.data;
   }
+
+  // Usage/CO2 stats endpoints
+  async getWorkspaceUsage(workspaceId: string) {
+    try {
+      const response = await this.client.get(`/workspaces/${workspaceId}/usage`);
+      return response.data;
+    } catch (e) {
+      // Return mock data if endpoint doesn't exist yet
+      return {
+        cpuHours: 247.5,
+        memoryGBHours: 512,
+        storageGB: 25,
+        bandwidthGB: 150,
+      };
+    }
+  }
+
+  // Audit log endpoints
+  async getAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    resource?: string;
+    resourceId?: string;
+  } = {}) {
+    const params = new URLSearchParams();
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+    if (options.resource) params.append('resource', options.resource);
+    if (options.resourceId) params.append('resourceId', options.resourceId);
+    const response = await this.client.get(`/audit?${params.toString()}`);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

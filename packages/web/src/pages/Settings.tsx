@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 import { apiService } from '../services/api.service';
 
@@ -40,145 +41,218 @@ export function Settings() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-0">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-2 text-gray-600">
+    <div className="max-w-3xl mx-auto px-4 sm:px-0 animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="mt-2 text-gray-500">
           Manage your profile and account settings
         </p>
       </div>
 
-      {/* Profile Card */}
-      <form onSubmit={handleSubmit} className="card mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
-
-        {success && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
-            {success}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Your full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
-              value={user?.email || ''}
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Email cannot be changed
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="avatarUrl"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Avatar URL
-            </label>
-            <input
-              type="url"
-              id="avatarUrl"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              placeholder="https://example.com/avatar.png"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-            />
-          </div>
-
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn btn-primary"
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      </form>
-
-      {/* Account Card */}
-      <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Account</h2>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Email Verification</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+      <div className="grid gap-6">
+        {/* Profile Card */}
+        <form onSubmit={handleSubmit} className="card">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center text-white text-2xl font-bold">
+              {(name || user?.email || '?').charAt(0).toUpperCase()}
             </div>
-            {user?.emailVerified ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Verified
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                Not verified
-              </span>
-            )}
-          </div>
-
-          <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-700">Two-Factor Authentication</p>
-              <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+              <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
+              <p className="text-sm text-gray-500">Your personal information</p>
             </div>
-            {user?.twoFactorEnabled ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Enabled
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                Disabled
-              </span>
-            )}
           </div>
 
-          {user?.createdAt && (
-            <div className="border-t border-gray-100 pt-4">
-              <p className="text-sm font-medium text-gray-700">Member Since</p>
-              <p className="text-sm text-gray-500">
-                {new Date(user.createdAt).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </p>
+          {success && (
+            <div className="alert alert-success mb-6 animate-fade-in">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{success}</span>
             </div>
           )}
+
+          {error && (
+            <div className="alert alert-error mb-6 animate-fade-in">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <div className="input-group">
+              <label htmlFor="name" className="label">
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                className="input"
+                placeholder="Your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="email" className="label">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                disabled
+                className="input bg-gray-50 !text-gray-500 cursor-not-allowed"
+                value={user?.email || ''}
+              />
+              <p className="mt-1 text-sm text-gray-400">
+                Email cannot be changed
+              </p>
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="avatarUrl" className="label">
+                Avatar URL <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                id="avatarUrl"
+                className="input"
+                placeholder="https://example.com/avatar.png"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn btn-primary"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner spinner-sm" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Account Card */}
+        <div className="card">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Security</h2>
+              <p className="text-sm text-gray-500">Manage your account security</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+              <div>
+                <p className="font-medium text-gray-900">Email Verification</p>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+              {user?.emailVerified ? (
+                <span className="badge badge-success flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Verified
+                </span>
+              ) : (
+                <span className="badge badge-warning">Not verified</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+              <div>
+                <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+                <p className="text-sm text-gray-500">Add an extra layer of security</p>
+              </div>
+              {user?.twoFactorEnabled ? (
+                <span className="badge badge-success flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Enabled
+                </span>
+              ) : (
+                <button className="btn btn-sm btn-secondary">Enable</button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+              <div>
+                <p className="font-medium text-gray-900">Password</p>
+                <p className="text-sm text-gray-500">Last changed: Never</p>
+              </div>
+              <button className="btn btn-sm btn-secondary">Change</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications Link */}
+        <Link
+          to="/settings/notifications"
+          className="card card-hover flex items-center justify-between group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center group-hover:bg-primary-600 transition-colors">
+              <svg className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">Notification Preferences</p>
+              <p className="text-sm text-gray-500">Configure email and push notifications</p>
+            </div>
+          </div>
+          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+
+        {/* Account Info */}
+        <div className="card bg-gray-50 border-gray-200">
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>
+              Member since{' '}
+              <strong>
+                {user?.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : 'Unknown'}
+              </strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="card border-red-200">
+          <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Once you delete your account, there is no going back. Please be certain.
+          </p>
+          <button className="btn btn-danger btn-sm">Delete Account</button>
         </div>
       </div>
     </div>

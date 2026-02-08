@@ -7,23 +7,49 @@ interface OverviewTabProps {
 export function OverviewTab({ service }: OverviewTabProps) {
   return (
     <div className="space-y-6">
-      {service.url && (
-        <div className="card bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-600 mb-1">Public URL</label>
-              <a
-                href={service.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-lg font-mono font-semibold text-primary-600 hover:text-primary-700 hover:underline break-all"
-              >
-                {service.url}
-              </a>
-              <p className="text-xs text-gray-600 mt-1">
-                This URL always points to your currently active deployment
+      {/* Subdomain & URL Card */}
+      <div className="card bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            {service.subdomain ? (
+              <>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Your .kubidu.io Domain
+                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg font-mono font-semibold text-primary-600">
+                    {service.subdomain}
+                  </span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                    Auto-assigned
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 mb-2">No subdomain assigned</p>
+            )}
+            
+            {service.url && (
+              <div className="mt-3 pt-3 border-t border-primary-200/50">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Live URL</label>
+                <a
+                  href={service.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-base font-mono text-primary-600 hover:text-primary-700 hover:underline break-all"
+                >
+                  {service.url}
+                </a>
+              </div>
+            )}
+            
+            {!service.url && service.subdomain && (
+              <p className="text-xs text-amber-600 mt-2">
+                ⏳ URL will be available after first successful deployment
               </p>
-            </div>
+            )}
+          </div>
+          {service.url && (
             <a
               href={service.url}
               target="_blank"
@@ -32,9 +58,9 @@ export function OverviewTab({ service }: OverviewTabProps) {
             >
               Visit Site &rarr;
             </a>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Information</h2>

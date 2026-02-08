@@ -1,5 +1,6 @@
 import { Deployment } from './types';
 import { formatDistanceToNow } from '../../utils/date';
+import { LogViewer } from './LogViewer';
 
 // Helper wrapper to handle string dates
 function formatRelativeTime(date: string | Date): string {
@@ -148,9 +149,12 @@ export function DeploymentsTab({
                         Build Logs
                       </button>
                     </div>
-                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-96 overflow-y-auto font-mono">
-                      {logType === 'runtime' ? (logs || 'No runtime logs available') : (buildLogs || 'No build logs available')}
-                    </pre>
+                    <LogViewer
+                      logs={logType === 'runtime' ? logs : buildLogs}
+                      isLoading={logsLoading}
+                      isStreaming={logType === 'runtime' && deployment.status === 'RUNNING'}
+                      title={logType === 'runtime' ? 'Runtime Logs' : 'Build Logs'}
+                    />
                   </div>
                 )}
               </div>

@@ -6,58 +6,30 @@ const templates = [
   {
     name: 'PostgreSQL',
     slug: 'postgresql',
-    description: 'PostgreSQL database with persistent storage',
-    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
+    description: 'PostgreSQL 16 database with persistent storage',
+    icon: '🐘',
     category: 'database',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'postgresql',
-          image: 'postgres',
-          tag: '16-alpine',
-          port: 5432,
+          name: 'postgres',
+          image: 'postgres:16-alpine',
+          volumes: [{ name: 'data', mountPath: '/var/lib/postgresql/data', size: '10Gi' }],
           env: {
-            POSTGRES_USER: { input: { label: 'Database User', default: 'postgres' } },
-            POSTGRES_PASSWORD: { generate: 'secret' as const },
+            POSTGRES_USER: { input: { label: 'Database User', default: 'kubidu' } },
+            POSTGRES_PASSWORD: { generated: 'password', length: 32 },
             POSTGRES_DB: { input: { label: 'Database Name', default: 'app' } },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/postgresql/data', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
-        },
-      ],
-    },
-  },
-  {
-    name: 'MySQL',
-    slug: 'mysql',
-    description: 'MySQL database with persistent storage',
-    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg',
-    category: 'database',
-    isOfficial: true,
-    isPublic: true,
-    definition: {
-      services: [
-        {
-          name: 'mysql',
-          image: 'mysql',
-          tag: '8.0',
-          port: 3306,
-          env: {
-            MYSQL_ROOT_PASSWORD: { generate: 'secret' as const },
-            MYSQL_DATABASE: { input: { label: 'Database Name', default: 'app' } },
-            MYSQL_USER: { input: { label: 'Database User', default: 'app' } },
-            MYSQL_PASSWORD: { generate: 'secret' as const },
+          ports: [5432],
+          healthCheck: {
+            command: ['pg_isready', '-U', '${POSTGRES_USER}'],
+            interval: 10,
+            timeout: 5,
+            retries: 5,
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/mysql', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
+          exports: ['POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB', 'DATABASE_URL'],
         },
       ],
     },
@@ -65,8 +37,8 @@ const templates = [
   {
     name: 'Redis',
     slug: 'redis',
-    description: 'Redis in-memory data store with authentication',
-    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg',
+    description: 'Redis 7 in-memory cache with persistence',
+    icon: '⚡',
     category: 'cache',
     isOfficial: true,
     isPublic: true,
@@ -74,18 +46,20 @@ const templates = [
       services: [
         {
           name: 'redis',
-          image: 'redis',
-          tag: '7-alpine',
-          port: 6379,
-          command: ['/bin/sh', '-c', 'redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"'],
+          image: 'redis:7-alpine',
+          volumes: [{ name: 'data', mountPath: '/data', size: '5Gi' }],
           env: {
-            REDIS_PASSWORD: { generate: 'secret' as const },
+            REDIS_PASSWORD: { generated: 'password', length: 32 },
           },
-          volumes: [
-            { name: 'data', mountPath: '/data', size: '1Gi' },
-          ],
-          memoryLimit: '256Mi',
-          cpuLimit: '250m',
+          ports: [6379],
+          command: ['redis-server', '--appendonly', 'yes', '--requirepass', '${REDIS_PASSWORD}'],
+          healthCheck: {
+            command: ['redis-cli', '-a', '${REDIS_PASSWORD}', 'ping'],
+            interval: 10,
+            timeout: 5,
+            retries: 5,
+          },
+          exports: ['REDIS_PASSWORD', 'REDIS_URL'],
         },
       ],
     },
@@ -93,8 +67,8 @@ const templates = [
   {
     name: 'MongoDB',
     slug: 'mongodb',
-    description: 'MongoDB document database',
-    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
+    description: 'MongoDB 7 document database',
+    icon: '🍃',
     category: 'database',
     isOfficial: true,
     isPublic: true,
@@ -102,270 +76,153 @@ const templates = [
       services: [
         {
           name: 'mongodb',
-          image: 'mongo',
-          tag: '7',
-          port: 27017,
+          image: 'mongo:7',
+          volumes: [{ name: 'data', mountPath: '/data/db', size: '10Gi' }],
           env: {
             MONGO_INITDB_ROOT_USERNAME: { input: { label: 'Root Username', default: 'admin' } },
-            MONGO_INITDB_ROOT_PASSWORD: { generate: 'secret' as const },
+            MONGO_INITDB_ROOT_PASSWORD: { generated: 'password', length: 32 },
+            MONGO_INITDB_DATABASE: { input: { label: 'Database Name', default: 'app' } },
           },
-          volumes: [
-            { name: 'data', mountPath: '/data/db', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
+          ports: [27017],
+          exports: ['MONGO_INITDB_ROOT_USERNAME', 'MONGO_INITDB_ROOT_PASSWORD', 'MONGO_INITDB_DATABASE', 'MONGODB_URL'],
         },
       ],
     },
   },
   {
-    name: 'WordPress',
-    slug: 'wordpress',
-    description: 'WordPress with MySQL database',
-    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/wordpress/wordpress-plain.svg',
-    category: 'cms',
+    name: 'Node.js Starter',
+    slug: 'nodejs-starter',
+    description: 'Express.js API starter with health checks',
+    icon: '🟢',
+    category: 'backend',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'MySQL',
-          image: 'mysql',
-          tag: '8.0',
-          port: 3306,
+          name: 'api',
+          image: 'node:20-alpine',
           env: {
-            MYSQL_ROOT_PASSWORD: { generate: 'secret' as const },
-            MYSQL_DATABASE: 'wordpress',
-            MYSQL_USER: 'wordpress',
-            MYSQL_PASSWORD: { generate: 'secret' as const },
+            NODE_ENV: { value: 'production' },
+            PORT: { value: '3000' },
+            API_SECRET: { generated: 'password', length: 64 },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/mysql', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
-        },
-        {
-          name: 'WordPress',
-          image: 'wordpress',
-          tag: 'latest',
-          port: 80,
-          public: true,
-          env: {
-            WORDPRESS_DB_HOST: { ref: 'MySQL.hostname' },
-            WORDPRESS_DB_USER: 'wordpress',
-            WORDPRESS_DB_PASSWORD: { ref: 'MySQL.env.MYSQL_PASSWORD' },
-            WORDPRESS_DB_NAME: 'wordpress',
+          ports: [3000],
+          healthCheck: {
+            path: '/health',
+            interval: 10,
+            timeout: 5,
+            retries: 3,
           },
-          volumes: [
-            { name: 'content', mountPath: '/var/www/html/wp-content', size: '5Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
         },
       ],
     },
   },
   {
-    name: 'n8n',
-    slug: 'n8n',
-    description: 'n8n workflow automation with PostgreSQL',
-    icon: 'https://n8n.io/favicon.ico',
-    category: 'automation',
+    name: 'Python Flask',
+    slug: 'python-flask',
+    description: 'Flask API with Gunicorn WSGI server',
+    icon: '🐍',
+    category: 'backend',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'PostgreSQL',
-          image: 'postgres',
-          tag: '16-alpine',
-          port: 5432,
+          name: 'api',
+          image: 'python:3.12-slim',
           env: {
-            POSTGRES_USER: 'n8n',
-            POSTGRES_PASSWORD: { generate: 'secret' as const },
-            POSTGRES_DB: 'n8n',
+            FLASK_ENV: { value: 'production' },
+            SECRET_KEY: { generated: 'password', length: 64 },
+            GUNICORN_WORKERS: { value: '4' },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/postgresql/data', size: '5Gi' },
-          ],
-          memoryLimit: '256Mi',
-          cpuLimit: '250m',
-        },
-        {
-          name: 'n8n',
-          image: 'n8nio/n8n',
-          tag: 'latest',
-          port: 5678,
-          public: true,
-          env: {
-            DB_TYPE: 'postgresdb',
-            DB_POSTGRESDB_HOST: { ref: 'PostgreSQL.hostname' },
-            DB_POSTGRESDB_PORT: '5432',
-            DB_POSTGRESDB_DATABASE: 'n8n',
-            DB_POSTGRESDB_USER: 'n8n',
-            DB_POSTGRESDB_PASSWORD: { ref: 'PostgreSQL.env.POSTGRES_PASSWORD' },
-            N8N_ENCRYPTION_KEY: { generate: 'secret' as const },
+          ports: [8000],
+          healthCheck: {
+            path: '/health',
+            interval: 10,
+            timeout: 5,
+            retries: 3,
           },
-          volumes: [
-            { name: 'data', mountPath: '/home/node/.n8n', size: '1Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
         },
       ],
     },
   },
   {
-    name: 'Ghost',
-    slug: 'ghost',
-    description: 'Ghost publishing platform with MySQL',
-    icon: 'https://ghost.org/favicon.ico',
-    category: 'cms',
+    name: 'Go Fiber',
+    slug: 'go-fiber',
+    description: 'Fiber web framework starter',
+    icon: '🐹',
+    category: 'backend',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'MySQL',
-          image: 'mysql',
-          tag: '8.0',
-          port: 3306,
+          name: 'api',
+          image: 'golang:1.22-alpine',
           env: {
-            MYSQL_ROOT_PASSWORD: { generate: 'secret' as const },
-            MYSQL_DATABASE: 'ghost',
-            MYSQL_USER: 'ghost',
-            MYSQL_PASSWORD: { generate: 'secret' as const },
+            GIN_MODE: { value: 'release' },
+            PORT: { value: '3000' },
+            API_SECRET: { generated: 'password', length: 64 },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/mysql', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
-        },
-        {
-          name: 'Ghost',
-          image: 'ghost',
-          tag: '5-alpine',
-          port: 2368,
-          public: true,
-          env: {
-            url: { input: { label: 'Site URL (e.g., https://blog.example.com)', default: 'http://localhost:2368' } },
-            database__client: 'mysql',
-            database__connection__host: { ref: 'MySQL.hostname' },
-            database__connection__port: '3306',
-            database__connection__user: { ref: 'MySQL.env.MYSQL_USER' },
-            database__connection__password: { ref: 'MySQL.env.MYSQL_PASSWORD' },
-            database__connection__database: { ref: 'MySQL.env.MYSQL_DATABASE' },
-            NODE_ENV: 'production',
+          ports: [3000],
+          healthCheck: {
+            path: '/health',
+            interval: 10,
+            timeout: 5,
+            retries: 3,
           },
-          volumes: [
-            { name: 'content', mountPath: '/var/lib/ghost/content', size: '5Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
         },
       ],
     },
   },
   {
-    name: 'Prefect',
-    slug: 'prefect',
-    description: 'Prefect workflow orchestration with PostgreSQL',
-    icon: 'https://api.iconify.design/simple-icons/prefect.svg',
-    category: 'automation',
+    name: 'MySQL',
+    slug: 'mysql',
+    description: 'MySQL 8 relational database',
+    icon: '🐬',
+    category: 'database',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'PostgreSQL',
-          image: 'postgres',
-          tag: '16-alpine',
-          port: 5432,
+          name: 'mysql',
+          image: 'mysql:8',
+          volumes: [{ name: 'data', mountPath: '/var/lib/mysql', size: '10Gi' }],
           env: {
-            POSTGRES_USER: 'prefect',
-            POSTGRES_PASSWORD: { generate: 'secret' as const },
-            POSTGRES_DB: 'prefect',
+            MYSQL_ROOT_PASSWORD: { generated: 'password', length: 32 },
+            MYSQL_USER: { input: { label: 'Database User', default: 'kubidu' } },
+            MYSQL_PASSWORD: { generated: 'password', length: 32 },
+            MYSQL_DATABASE: { input: { label: 'Database Name', default: 'app' } },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/postgresql/data', size: '5Gi' },
-          ],
-          memoryLimit: '256Mi',
-          cpuLimit: '250m',
-        },
-        {
-          name: 'Prefect',
-          image: 'prefecthq/prefect',
-          tag: '3-python3.12',
-          port: 4200,
-          public: true,
-          command: ['prefect', 'server', 'start'],
-          env: {
-            PREFECT_SERVER_API_HOST: '0.0.0.0',
-            PREFECT_SERVER_API_PORT: '4200',
-            PREFECT_API_URL: { input: { label: 'Public URL (e.g., https://prefect.example.com/api)', default: 'http://localhost:4200/api' } },
-            PREFECT_API_DATABASE_CONNECTION_URL: { ref: 'PostgreSQL.connection_url' },
-          },
-          volumes: [
-            { name: 'data', mountPath: '/root/.prefect', size: '1Gi' },
-          ],
-          memoryLimit: '1Gi',
-          cpuLimit: '1000m',
+          ports: [3306],
+          exports: ['MYSQL_ROOT_PASSWORD', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE', 'DATABASE_URL'],
         },
       ],
     },
   },
   {
-    name: 'Directus',
-    slug: 'directus',
-    description: 'Directus headless CMS with PostgreSQL',
-    icon: 'https://raw.githubusercontent.com/directus/directus/main/app/public/favicon.ico',
-    category: 'cms',
+    name: 'MinIO',
+    slug: 'minio',
+    description: 'S3-compatible object storage',
+    icon: '🗄️',
+    category: 'storage',
     isOfficial: true,
     isPublic: true,
     definition: {
       services: [
         {
-          name: 'PostgreSQL',
-          image: 'postgres',
-          tag: '16-alpine',
-          port: 5432,
+          name: 'minio',
+          image: 'minio/minio:latest',
+          volumes: [{ name: 'data', mountPath: '/data', size: '50Gi' }],
           env: {
-            POSTGRES_USER: 'directus',
-            POSTGRES_PASSWORD: { generate: 'secret' as const },
-            POSTGRES_DB: 'directus',
+            MINIO_ROOT_USER: { input: { label: 'Access Key', default: 'minioadmin' } },
+            MINIO_ROOT_PASSWORD: { generated: 'password', length: 32 },
           },
-          volumes: [
-            { name: 'data', mountPath: '/var/lib/postgresql/data', size: '10Gi' },
-          ],
-          memoryLimit: '256Mi',
-          cpuLimit: '250m',
-        },
-        {
-          name: 'Directus',
-          image: 'directus/directus',
-          tag: 'latest',
-          port: 8055,
-          public: true,
-          env: {
-            PUBLIC_URL: { input: { label: 'Public URL (e.g., https://cms.example.com)', default: 'http://localhost:8055' } },
-            KEY: { generate: 'secret' as const },
-            SECRET: { generate: 'secret' as const },
-            DB_CLIENT: 'pg',
-            DB_HOST: { ref: 'PostgreSQL.hostname' },
-            DB_PORT: '5432',
-            DB_DATABASE: 'directus',
-            DB_USER: 'directus',
-            DB_PASSWORD: { ref: 'PostgreSQL.env.POSTGRES_PASSWORD' },
-            ADMIN_EMAIL: { input: { label: 'Admin Email', default: 'admin@example.com' } },
-            ADMIN_PASSWORD: { generate: 'secret' as const },
-          },
-          volumes: [
-            { name: 'uploads', mountPath: '/directus/uploads', size: '10Gi' },
-          ],
-          memoryLimit: '512Mi',
-          cpuLimit: '500m',
+          ports: [9000, 9001],
+          command: ['server', '/data', '--console-address', ':9001'],
+          exports: ['MINIO_ROOT_USER', 'MINIO_ROOT_PASSWORD', 'S3_ENDPOINT'],
         },
       ],
     },
@@ -373,26 +230,26 @@ const templates = [
 ];
 
 async function main() {
-  console.log('Seeding templates...');
+  console.log('🌱 Seeding templates...');
 
   for (const template of templates) {
-    await prisma.template.upsert({
+    const existing = await prisma.template.findUnique({
       where: { slug: template.slug },
-      update: {
-        name: template.name,
-        description: template.description,
-        icon: template.icon,
-        category: template.category,
-        isOfficial: template.isOfficial,
-        isPublic: template.isPublic,
-        definition: template.definition,
-      },
-      create: template,
     });
-    console.log(`  - ${template.name}`);
+
+    if (existing) {
+      console.log(`  ⏭️  Skipping ${template.name} (already exists)`);
+      continue;
+    }
+
+    await prisma.template.create({
+      data: template,
+    });
+
+    console.log(`  ✅ Created ${template.name}`);
   }
 
-  console.log('Done!');
+  console.log('\n🎉 Template seeding complete!');
 }
 
 main()

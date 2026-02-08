@@ -82,6 +82,35 @@ These are important but not blocking first customers:
 
 ---
 
+## ⚡ Scaling Features (P1.5 - High Priority)
+
+Robert wants this ASAP:
+
+- [ ] **Horizontal Pod Autoscaler (HPA)** - Scale based on CPU/memory
+- [ ] **Request-based autoscaling** - Scale based on requests per second
+- [ ] **Scale-to-Zero** - Serverless mode, save costs when idle
+- [ ] **Manual replica control in UI** - Slider 1-10 replicas
+- [ ] **Resource usage dashboard** - Real-time CPU/RAM graphs
+
+### Implementation Notes:
+```yaml
+# K8s HPA Example
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+---
+
 ## 🚫 Out of Scope (P2+)
 
 Not needed for MVP:
@@ -147,15 +176,20 @@ Based on CLAUDE.md and code structure:
 - Kubernetes + "Du" (German for "you") → "Kubernetes for You"
 - Easy to remember, pronounce, spell
 
-### Tagline Ideas
-- "Deploy like magic. Stay compliant."
-- "European cloud, global reach."
-- "Your code. Your data. Your Europe."
+### Tagline ✅ DECIDED
+**"Deploy with confidence. Stay compliant."**
 
-### Color Palette (TBD - implement)
-- Primary: Deep Blue (#1e40af) - trust, stability
-- Accent: Vibrant Green (#22c55e) - success, deployment
-- Neutral: Slate grays
+USPs:
+1. 🌱 100% Green Energy (Renewable Powered)
+2. 🇪🇺 EU-Hosted (Frankfurt, Germany)
+3. 🔒 GDPR Compliant (Privacy First)
+4. 📜 ISO 27001 Ready (Audit Logging)
+
+### Color Palette ✅ IMPLEMENTED
+- Primary: **Kubidu Green (#16A34A)** - 100% green energy = green brand
+- Hover: Leaf Light (#22C55E)
+- Dark: Deep Forest (#0A1F0A)
+- Success: Trust Teal (#0D9488)
 - Alert: Amber/Red for warnings/errors
 
 ### Tone of Voice

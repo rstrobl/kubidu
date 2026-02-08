@@ -6,6 +6,7 @@ import { PrismaService } from '../database/prisma.service';
 import { NamespaceManager } from '../k8s/namespace.manager';
 import { SecretManager } from '../k8s/secret.manager';
 import { DeploymentManager, DeploymentConfig } from '../k8s/deployment.manager';
+import { HPAManager } from '../k8s/hpa.manager';
 import { EncryptionService } from '../services/encryption.service';
 
 interface DeployJob {
@@ -38,6 +39,7 @@ export class DeployConsumer {
     private namespaceManager: NamespaceManager,
     private secretManager: SecretManager,
     private deploymentManager: DeploymentManager,
+    private hpaManager: HPAManager,
     @InjectQueue('notification') private notificationQueue: Queue,
   ) {}
 
@@ -187,6 +189,26 @@ export class DeployConsumer {
       } else {
         // Delete any existing ingress since there are no domains
         await this.deploymentManager.deleteIngress(namespace, config.serviceName);
+      }
+
+      // Manage Horizontal Pod Autoscaler
+      if (deployment.service.autoscalingEnabled) {
+        this.logger.log(`Creating/updating HPA for service ${deployment.service.id}`);
+        await this.hpaManager.createOrUpdateHPA(namespace, {
+          deploymentName: config.name,
+          serviceId: deployment.service.id,
+          minReplicas: deployment.service.autoscalingMinReplicas || 1,
+          maxReplicas: deployment.service.autoscalingMaxReplicas || 10,
+          targetCPUUtilization: deployment.service.autoscalingTargetCPU || 70,
+          targetMemoryUtilization: deployment.service.autoscalingTargetMemory || undefined,
+        });
+      } else {
+        // Delete HPA if autoscaling is disabled
+        try {
+          await this.hpaManager.deleteHPA(namespace, config.name);
+        } catch (e) {
+          // Ignore if HPA doesn't exist
+        }
       }
 
       // Wait for deployment to be ready
