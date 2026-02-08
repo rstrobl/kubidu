@@ -1,0 +1,49 @@
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#16A34A"/>
+      <stop offset="100%" style="stop-color:#22C55E"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background shapes -->
+  <circle cx="150" cy="150" r="120" fill="url(#heroGradient)" opacity="0.1"/>
+  <circle cx="150" cy="150" r="90" fill="url(#heroGradient)" opacity="0.15"/>
+  <circle cx="150" cy="150" r="60" fill="url(#heroGradient)" opacity="0.2"/>
+  
+  <!-- Main cube/container -->
+  <g filter="url(#glow)">
+    <!-- Base -->
+    <path d="M75 140L150 100L225 140V200L150 240L75 200V140Z" stroke="#16A34A" stroke-width="3" fill="none"/>
+    
+    <!-- Top face -->
+    <path d="M75 140L150 180L225 140" stroke="#16A34A" stroke-width="3" fill="none"/>
+    <path d="M150 180V240" stroke="#16A34A" stroke-width="3"/>
+    
+    <!-- Center node -->
+    <circle cx="150" cy="180" r="8" fill="#22C55E"/>
+    
+    <!-- Connection dots -->
+    <circle cx="75" cy="140" r="5" fill="#16A34A"/>
+    <circle cx="225" cy="140" r="5" fill="#16A34A"/>
+    <circle cx="150" cy="100" r="5" fill="#16A34A"/>
+    <circle cx="75" cy="200" r="5" fill="#16A34A"/>
+    <circle cx="225" cy="200" r="5" fill="#16A34A"/>
+    <circle cx="150" cy="240" r="5" fill="#16A34A"/>
+  </g>
+  
+  <!-- Orbiting elements -->
+  <circle cx="80" cy="90" r="4" fill="#22C55E" opacity="0.8"/>
+  <circle cx="220" cy="80" r="3" fill="#16A34A" opacity="0.6"/>
+  <circle cx="250" cy="180" r="5" fill="#22C55E" opacity="0.7"/>
+  <circle cx="50" cy="190" r="4" fill="#16A34A" opacity="0.5"/>
+  <circle cx="190" cy="260" r="3" fill="#22C55E" opacity="0.6"/>
+  <circle cx="110" cy="250" r="4" fill="#16A34A" opacity="0.7"/>
+</svg>

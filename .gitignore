@@ -83,3 +83,7 @@ secrets/
 # Lock files (keep package-lock.json for consistency)
 # yarn.lock
 # pnpm-lock.yaml
+
+# VitePress cache
+packages/docs/.vitepress/cache/
+

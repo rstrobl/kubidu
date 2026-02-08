@@ -42,7 +42,23 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
     setLoadingTemplates(true);
     try {
       const data = await apiService.getTemplates();
-      setTemplates(data);
+      // Sort templates: user-friendly categories first (cms, web), then others
+      const categoryOrder: Record<string, number> = {
+        'cms': 1,
+        'web': 2,
+        'monitoring': 3,
+        'backend': 4,
+        'database': 5,
+        'cache': 6,
+        'storage': 7,
+      };
+      const sortedData = [...data].sort((a, b) => {
+        const orderA = categoryOrder[a.category || ''] || 99;
+        const orderB = categoryOrder[b.category || ''] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name);
+      });
+      setTemplates(sortedData);
     } catch (err) {
       console.error('Failed to load templates:', err);
     } finally {

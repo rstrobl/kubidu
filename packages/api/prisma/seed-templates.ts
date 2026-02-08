@@ -3,6 +3,135 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const templates = [
+  // ====== USER-FRIENDLY TEMPLATES (for non-tech users) ======
+  {
+    name: 'WordPress',
+    slug: 'wordpress',
+    description: 'The world\'s most popular blogging platform. Start your blog in minutes!',
+    icon: '📝',
+    category: 'cms',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'wordpress',
+          image: 'wordpress:latest',
+          volumes: [{ name: 'wp-content', mountPath: '/var/www/html/wp-content', size: '10Gi' }],
+          env: {
+            WORDPRESS_DB_HOST: { value: 'mysql:3306' },
+            WORDPRESS_DB_USER: { value: 'wordpress' },
+            WORDPRESS_DB_PASSWORD: { ref: 'mysql.MYSQL_PASSWORD' },
+            WORDPRESS_DB_NAME: { value: 'wordpress' },
+            WORDPRESS_TABLE_PREFIX: { value: 'wp_' },
+          },
+          ports: [80],
+          healthCheck: {
+            path: '/wp-admin/install.php',
+            interval: 30,
+            timeout: 10,
+            retries: 5,
+          },
+          dependsOn: ['mysql'],
+        },
+        {
+          name: 'mysql',
+          image: 'mysql:8',
+          volumes: [{ name: 'db-data', mountPath: '/var/lib/mysql', size: '10Gi' }],
+          env: {
+            MYSQL_ROOT_PASSWORD: { generated: 'password', length: 32 },
+            MYSQL_DATABASE: { value: 'wordpress' },
+            MYSQL_USER: { value: 'wordpress' },
+            MYSQL_PASSWORD: { generated: 'password', length: 32 },
+          },
+          ports: [3306],
+          internal: true,
+        },
+      ],
+    },
+  },
+  {
+    name: 'Ghost Blog',
+    slug: 'ghost',
+    description: 'Beautiful, modern blogging platform. Perfect for writers and creators.',
+    icon: '👻',
+    category: 'cms',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'ghost',
+          image: 'ghost:5-alpine',
+          volumes: [{ name: 'content', mountPath: '/var/lib/ghost/content', size: '10Gi' }],
+          env: {
+            url: { input: { label: 'Your Blog URL', default: 'https://your-blog.kubidu.io', placeholder: 'https://myblog.kubidu.io' } },
+            database__client: { value: 'sqlite3' },
+            database__connection__filename: { value: '/var/lib/ghost/content/data/ghost.db' },
+            NODE_ENV: { value: 'production' },
+          },
+          ports: [2368],
+          healthCheck: {
+            path: '/ghost/api/admin/site/',
+            interval: 30,
+            timeout: 10,
+            retries: 5,
+          },
+        },
+      ],
+    },
+  },
+  {
+    name: 'Static Website',
+    slug: 'static-site',
+    description: 'Simple static website hosting. Just upload your HTML, CSS, and JavaScript.',
+    icon: '🌐',
+    category: 'web',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'web',
+          image: 'nginx:alpine',
+          volumes: [{ name: 'html', mountPath: '/usr/share/nginx/html', size: '1Gi' }],
+          ports: [80],
+          healthCheck: {
+            path: '/',
+            interval: 10,
+            timeout: 5,
+            retries: 3,
+          },
+        },
+      ],
+    },
+  },
+  {
+    name: 'Uptime Kuma',
+    slug: 'uptime-kuma',
+    description: 'Self-hosted monitoring tool. Track your website uptime with beautiful dashboards.',
+    icon: '📊',
+    category: 'monitoring',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'uptime-kuma',
+          image: 'louislam/uptime-kuma:1',
+          volumes: [{ name: 'data', mountPath: '/app/data', size: '5Gi' }],
+          ports: [3001],
+          healthCheck: {
+            path: '/',
+            interval: 30,
+            timeout: 10,
+            retries: 3,
+          },
+        },
+      ],
+    },
+  },
+  // ====== DEVELOPER TEMPLATES ======
   {
     name: 'PostgreSQL',
     slug: 'postgresql',
