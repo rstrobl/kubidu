@@ -57,4 +57,14 @@ export default () => ({
     appName: process.env.GITHUB_APP_NAME || 'kubidu',
     callbackUrl: process.env.GITHUB_APP_CALLBACK_URL || 'http://localhost:5173/github/callback',
   },
+
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.EMAIL_FROM || 'noreply@kubidu.io',
+    fromName: process.env.EMAIL_FROM_NAME || 'Kubidu',
+  },
+
+  app: {
+    url: process.env.APP_URL || 'http://localhost:5173',
+  },
 });

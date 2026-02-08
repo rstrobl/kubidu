@@ -18,7 +18,7 @@ interface DeployTemplateJobData {
   templateDeploymentId: string;
   templateId: string;
   projectId: string;
-  userId: string;
+  workspaceId: string;
   inputs: Record<string, string>;
 }
 
@@ -37,7 +37,7 @@ export class TemplateConsumer {
 
   @Process('deploy-template')
   async handleDeployTemplate(job: Job<DeployTemplateJobData>) {
-    const { templateDeploymentId, templateId, projectId, userId, inputs } = job.data;
+    const { templateDeploymentId, templateId, projectId, workspaceId, inputs } = job.data;
 
     this.logger.log(`Processing template deployment: ${templateDeploymentId}`);
 
@@ -59,8 +59,8 @@ export class TemplateConsumer {
 
       const definition = template.definition as unknown as TemplateDefinition;
 
-      // Ensure namespace exists and get the actual namespace name
-      const namespace = await this.namespaceManager.ensureNamespace(userId);
+      // Ensure namespace exists and get the actual namespace name (using workspaceId for tenant isolation)
+      const namespace = await this.namespaceManager.ensureNamespace(workspaceId);
 
       // First pass: create or find existing services (handles retries)
       // Maps template service name -> service info (id, name, k8sName)
@@ -204,7 +204,7 @@ export class TemplateConsumer {
               pvcName,
               volumeDef.size,
               {
-                'kubidu.io/user-id': userId,
+                'kubidu.io/workspace-id': workspaceId,
                 'kubidu.io/service-id': serviceInfo.id,
               },
             );
@@ -249,7 +249,7 @@ export class TemplateConsumer {
         const deployment = await this.prisma.deployment.create({
           data: {
             serviceId: serviceInfo.id,
-            name: `${serviceInfo.name}-${Date.now()}`,
+            name: `${serviceInfo.name.toLowerCase()}-${Date.now()}`,
             status: 'PENDING',
             imageUrl: `${serviceDef.image}:${serviceDef.tag || 'latest'}`,
             imageTag: serviceDef.tag || 'latest',
@@ -265,7 +265,7 @@ export class TemplateConsumer {
 
         // Deploy to K8s (use k8sName for unique K8s resource names)
         await this.deployToK8s(
-          userId,
+          workspaceId,
           serviceInfo.id,
           deployment.id,
           serviceInfo.k8sName,
@@ -282,7 +282,7 @@ export class TemplateConsumer {
             serviceInfo.k8sName,
             serviceDef.port || 8080,
             namespace,
-            userId,
+            workspaceId,
           );
           this.logger.log(`Created public subdomain: ${fullDomain}`);
         }
@@ -501,7 +501,7 @@ export class TemplateConsumer {
   }
 
   private async deployToK8s(
-    userId: string,
+    workspaceId: string,
     serviceId: string,
     deploymentId: string,
     serviceName: string, // Unique service name for K8s resources
@@ -516,7 +516,7 @@ export class TemplateConsumer {
       `env-${deploymentId}`,
       env,
       {
-        'kubidu.io/user-id': userId,
+        'kubidu.io/workspace-id': workspaceId,
         'kubidu.io/service-id': serviceId,
         'kubidu.io/deployment-id': deploymentId,
       },
@@ -543,7 +543,7 @@ export class TemplateConsumer {
         },
       },
       labels: {
-        'kubidu.io/user-id': userId,
+        'kubidu.io/workspace-id': workspaceId,
         'kubidu.io/service-id': serviceId,
         'kubidu.io/deployment-id': deploymentId,
       },
@@ -572,7 +572,7 @@ export class TemplateConsumer {
     serviceName: string,
     port: number,
     namespace: string,
-    userId: string,
+    workspaceId: string,
   ): Promise<string> {
     // Generate subdomain prefix from the unique service name
     const subdomainPrefix = serviceName.toLowerCase().replace(/[^a-z0-9-]/g, '-');

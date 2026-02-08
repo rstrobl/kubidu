@@ -9,7 +9,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
 import { DeployTemplateDto } from './dto/deploy-template.dto';
-import { Template, TemplateDeployment } from '@prisma/client';
+import { Template, TemplateDeployment, WorkspaceRole } from '@prisma/client';
 import {
   TemplateDefinition,
   TemplateEnvValue,
@@ -24,6 +24,46 @@ export class TemplatesService {
     private readonly prisma: PrismaService,
     @InjectQueue('template') private readonly templateQueue: Queue,
   ) {}
+
+  /**
+   * Check if user has required access to workspace via project.
+   * Returns workspaceId for use in queue jobs.
+   */
+  private async checkWorkspaceAccessViaProject(
+    userId: string,
+    projectId: string,
+    allowedRoles: WorkspaceRole[],
+  ): Promise<{ workspaceId: string }> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { workspaceId: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId: project.workspaceId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this workspace');
+    }
+
+    if (!allowedRoles.includes(membership.role)) {
+      throw new ForbiddenException(
+        `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
+      );
+    }
+
+    return { workspaceId: project.workspaceId };
+  }
 
   async findAll(): Promise<Template[]> {
     return this.prisma.template.findMany({
@@ -68,18 +108,12 @@ export class TemplatesService {
     projectId: string,
     dto: DeployTemplateDto,
   ): Promise<TemplateDeployment> {
-    // Verify project exists and belongs to user
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
-    }
+    // Verify workspace access - any member can deploy templates
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     // Get template
     const template = await this.prisma.template.findUnique({
@@ -116,7 +150,7 @@ export class TemplatesService {
         templateDeploymentId: templateDeployment.id,
         templateId: template.id,
         projectId,
-        userId,
+        workspaceId,
         inputs: dto.inputs || {},
       },
       {
@@ -156,9 +190,12 @@ export class TemplatesService {
       throw new NotFoundException('Template deployment not found in this project');
     }
 
-    if (deployment.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this deployment');
-    }
+    // Check workspace access - any member can view template deployments
+    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return deployment;
   }
@@ -167,17 +204,12 @@ export class TemplatesService {
     userId: string,
     projectId: string,
   ): Promise<TemplateDeployment[]> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
-    }
+    // Check workspace access - any member can view template deployments
+    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return this.prisma.templateDeployment.findMany({
       where: { projectId },

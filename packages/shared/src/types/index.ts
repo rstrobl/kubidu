@@ -1,3 +1,44 @@
+// Workspace types
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  avatarUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export enum WorkspaceRole {
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER',
+  DEPLOYER = 'DEPLOYER',
+}
+
+export interface WorkspaceMember {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  role: WorkspaceRole;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkspaceInvitation {
+  id: string;
+  workspaceId: string;
+  email: string;
+  role: WorkspaceRole;
+  token: string;
+  invitedById: string;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface WorkspaceWithRole extends Workspace {
+  role: WorkspaceRole;
+}
+
 // User types
 export interface User {
   id: string;
@@ -41,7 +82,7 @@ export enum ApiKeyPermission {
 // Project types
 export interface Project {
   id: string;
-  userId: string;
+  workspaceId: string;
   name: string;
   slug: string;
   description: string | null;
@@ -212,7 +253,7 @@ export interface BuildQueueItem {
 // Subscription types
 export interface Subscription {
   id: string;
-  userId: string;
+  workspaceId: string;
   plan: SubscriptionPlan;
   stripeSubscriptionId: string | null;
   stripeCustomerId: string | null;
@@ -253,7 +294,7 @@ export interface UsageRecord {
 // Invoice types
 export interface Invoice {
   id: string;
-  userId: string;
+  workspaceId: string;
   stripeInvoiceId: string | null;
   amount: number;
   currency: string;
@@ -418,14 +459,14 @@ export interface BuildJobPayload {
 export interface DeployJobPayload {
   deploymentId: string;
   serviceId: string;
-  userId: string;
+  workspaceId: string;
 }
 
 // Kubernetes resource types
 export interface KubiduDeploySpec {
   serviceId: string;
   deploymentId: string;
-  userId: string;
+  workspaceId: string;
   image: string;
   replicas: number;
   resources: {
@@ -471,6 +512,25 @@ export interface RegisterRequest {
     privacyPolicy: boolean;
     marketing?: boolean;
   };
+}
+
+export interface CreateWorkspaceRequest {
+  name: string;
+  avatarUrl?: string;
+}
+
+export interface UpdateWorkspaceRequest {
+  name?: string;
+  avatarUrl?: string;
+}
+
+export interface InviteMemberRequest {
+  email: string;
+  role: WorkspaceRole;
+}
+
+export interface UpdateMemberRoleRequest {
+  role: WorkspaceRole;
 }
 
 export interface CreateProjectRequest {

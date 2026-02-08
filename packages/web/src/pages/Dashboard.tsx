@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { useWorkspaceStore } from '../stores/workspace.store';
 
 export function Dashboard() {
+  const { currentWorkspace } = useWorkspaceStore();
+
   const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => apiService.getProjects(),
+    queryKey: ['projects', currentWorkspace?.id],
+    queryFn: () => currentWorkspace ? apiService.getProjects(currentWorkspace.id) : Promise.resolve([]),
+    enabled: !!currentWorkspace,
   });
 
   if (isLoading) {

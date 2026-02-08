@@ -1033,6 +1033,8 @@ export function ServiceDetailModal({ projectId, serviceId, isOpen, onClose, onSe
                                     deployment.status === 'RUNNING' ? 'bg-green-100 text-green-800' :
                                     deployment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                                     deployment.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                                    deployment.status === 'CRASHED' ? 'bg-red-100 text-red-800' :
+                                    deployment.status === 'STOPPED' ? 'bg-gray-100 text-gray-600' :
                                     'bg-gray-100 text-gray-800'
                                   }`}>
                                     {deployment.status}
@@ -1047,6 +1049,15 @@ export function ServiceDetailModal({ projectId, serviceId, isOpen, onClose, onSe
                                   disabled={retryingDeployment === deployment.id}
                                 >
                                   {retryingDeployment === deployment.id ? 'Retrying...' : 'Retry'}
+                                </button>
+                              )}
+                              {(deployment.status === 'STOPPED' || deployment.status === 'CRASHED') && (
+                                <button
+                                  onClick={() => handleRetryDeployment(deployment.id)}
+                                  className="btn bg-primary-600 hover:bg-primary-700 text-white text-sm"
+                                  disabled={retryingDeployment === deployment.id}
+                                >
+                                  {retryingDeployment === deployment.id ? 'Redeploying...' : 'Redeploy'}
                                 </button>
                               )}
                               <button

@@ -8,7 +8,7 @@ import { SecretManager } from '../k8s/secret.manager';
 import { DeploymentManager } from '../k8s/deployment.manager';
 import { PrismaService } from '../database/prisma.service';
 import { EncryptionService } from '../services/encryption.service';
-import { LogsController } from '../logs/logs.controller';
+import { LogsController } from '../log-streaming/logs.controller';
 
 @Module({
   imports: [
@@ -17,6 +17,9 @@ import { LogsController } from '../logs/logs.controller';
     }),
     BullModule.registerQueue({
       name: 'template',
+    }),
+    BullModule.registerQueue({
+      name: 'notification',
     }),
   ],
   controllers: [LogsController],

@@ -16,6 +16,7 @@ import {
   AuthResponse,
   ApiKeyPermission,
   GDPR_CONFIG,
+  slugify,
 } from '@kubidu/shared';
 import { generateApiKey, validatePassword } from '@kubidu/shared';
 import { EncryptionService } from '../../services/encryption.service';
@@ -112,10 +113,30 @@ export class AuthService {
         ],
       });
 
-      // Create free subscription
-      await tx.subscription.create({
+      // Create personal workspace for the user
+      const workspaceName = name ? `${name}'s Workspace` : `${email.split('@')[0]}'s Workspace`;
+      const workspaceSlug = `personal-${newUser.id}`;
+
+      const workspace = await tx.workspace.create({
+        data: {
+          name: workspaceName,
+          slug: workspaceSlug,
+        },
+      });
+
+      // Add user as admin of their workspace
+      await tx.workspaceMember.create({
         data: {
           userId: newUser.id,
+          workspaceId: workspace.id,
+          role: 'ADMIN',
+        },
+      });
+
+      // Create free subscription for the workspace
+      await tx.subscription.create({
+        data: {
+          workspaceId: workspace.id,
           stripeCustomerId: null,
           stripeSubscriptionId: null,
           plan: 'FREE',

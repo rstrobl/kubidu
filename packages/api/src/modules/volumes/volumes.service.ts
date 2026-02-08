@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Volume } from '@prisma/client';
+import { Volume, WorkspaceRole } from '@prisma/client';
 
 @Injectable()
 export class VolumesService {
@@ -14,10 +14,29 @@ export class VolumesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Check if user has access to a workspace with required roles
+   */
+  private async checkWorkspaceAccess(
+    userId: string,
+    workspaceId: string,
+    allowedRoles: WorkspaceRole[],
+  ): Promise<void> {
+    const member = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: { userId, workspaceId },
+      },
+    });
+
+    if (!member || !allowedRoles.includes(member.role)) {
+      throw new ForbiddenException('You do not have permission to access this resource');
+    }
+  }
+
+  /**
    * Get all volumes for a project
    */
   async findAll(userId: string, projectId: string): Promise<Volume[]> {
-    // Verify project belongs to user
+    // Verify project belongs to workspace user has access to
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -26,9 +45,11 @@ export class VolumesService {
       throw new NotFoundException('Project not found');
     }
 
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
-    }
+    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return this.prisma.volume.findMany({
       where: { projectId },
@@ -84,9 +105,11 @@ export class VolumesService {
       throw new NotFoundException('Volume not found in this project');
     }
 
-    if (volume.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this volume');
-    }
+    await this.checkWorkspaceAccess(userId, volume.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return volume;
   }

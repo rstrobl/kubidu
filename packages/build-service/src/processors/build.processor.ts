@@ -130,7 +130,7 @@ export class BuildProcessor {
         await this.deployQueue.add({
           deploymentId,
           projectId,
-          userId: deployment.service.project.userId,
+          workspaceId: deployment.service.project.workspaceId,
         });
         this.logger.log(`Enqueued deploy job for deployment ${deploymentId}`);
       }

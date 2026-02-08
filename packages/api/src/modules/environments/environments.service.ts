@@ -7,7 +7,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { EnvironmentVariable } from '@prisma/client';
+import { EnvironmentVariable, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { EncryptionService } from '../../services/encryption.service';
 import { SetEnvironmentVariableDto } from './dto/set-environment-variable.dto';
@@ -24,6 +24,25 @@ export class EnvironmentsService {
     @Inject(forwardRef(() => DeploymentsService))
     private readonly deploymentsService: DeploymentsService,
   ) {}
+
+  /**
+   * Check if user has access to a workspace with required roles
+   */
+  private async checkWorkspaceAccess(
+    userId: string,
+    workspaceId: string,
+    allowedRoles: WorkspaceRole[],
+  ): Promise<void> {
+    const member = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: { userId, workspaceId },
+      },
+    });
+
+    if (!member || !allowedRoles.includes(member.role)) {
+      throw new ForbiddenException('You do not have permission to access this resource');
+    }
+  }
 
   async setVariable(
     userId: string,
@@ -43,15 +62,19 @@ export class EnvironmentsService {
       throw new BadRequestException('Either serviceId or deploymentId must be provided');
     }
 
-    // Verify ownership
+    // Verify ownership via workspace
     if (serviceId) {
       const service = await this.prisma.service.findUnique({
         where: { id: serviceId },
         include: { project: true },
       });
-      if (!service || service.project.userId !== userId) {
-        throw new ForbiddenException('You do not have permission to modify this service');
+      if (!service) {
+        throw new NotFoundException('Service not found');
       }
+      await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+      ]);
     }
 
     if (deploymentId) {
@@ -59,9 +82,13 @@ export class EnvironmentsService {
         where: { id: deploymentId },
         include: { service: { include: { project: true } } },
       });
-      if (!deployment || deployment.service.project.userId !== userId) {
-        throw new ForbiddenException('You do not have permission to modify this deployment');
+      if (!deployment) {
+        throw new NotFoundException('Deployment not found');
       }
+      await this.checkWorkspaceAccess(userId, deployment.service.project.workspaceId, [
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+      ]);
     }
 
     // Encrypt the value
@@ -236,8 +263,8 @@ export class EnvironmentsService {
       );
     }
 
-    // Verify ownership
-    let ownerUserId: string | null = null;
+    // Verify ownership via workspace
+    let workspaceId: string | null = null;
     let serviceId: string | null = null;
 
     if (envVar.serviceId) {
@@ -246,7 +273,7 @@ export class EnvironmentsService {
         include: { project: true },
       });
       if (service) {
-        ownerUserId = service.project.userId;
+        workspaceId = service.project.workspaceId;
         serviceId = service.id;
       }
     } else if (envVar.deploymentId) {
@@ -255,14 +282,19 @@ export class EnvironmentsService {
         include: { service: { include: { project: true } } },
       });
       if (deployment) {
-        ownerUserId = deployment.service.project.userId;
+        workspaceId = deployment.service.project.workspaceId;
         serviceId = deployment.service.id;
       }
     }
 
-    if (ownerUserId !== userId) {
+    if (!workspaceId) {
       throw new ForbiddenException('You do not have permission to delete this variable');
     }
+
+    await this.checkWorkspaceAccess(userId, workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     await this.prisma.environmentVariable.delete({
       where: { id: envVarId },
@@ -305,14 +337,20 @@ export class EnvironmentsService {
     projectId: string,
     excludeServiceId?: string,
   ): Promise<any[]> {
-    // Verify project ownership
+    // Verify project ownership via workspace
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
     });
 
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
+    if (!project) {
+      throw new NotFoundException('Project not found');
     }
+
+    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     // Get all services in the project
     const whereClause: any = {
@@ -374,7 +412,7 @@ export class EnvironmentsService {
   ): Promise<any> {
     const { serviceId, sourceServiceId, key, alias } = dto;
 
-    // Validate both services exist and belong to the same project owned by this user
+    // Validate both services exist and belong to the same project with proper workspace access
     const [consumer, source] = await Promise.all([
       this.prisma.service.findUnique({
         where: { id: serviceId },
@@ -386,10 +424,19 @@ export class EnvironmentsService {
       }),
     ]);
 
-    if (!consumer || consumer.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to modify this service');
+    if (!consumer) {
+      throw new NotFoundException('Service not found');
     }
-    if (!source || source.project.userId !== userId) {
+    await this.checkWorkspaceAccess(userId, consumer.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
+
+    if (!source) {
+      throw new NotFoundException('Source service not found');
+    }
+    // Source must be in the same workspace
+    if (source.project.workspaceId !== consumer.project.workspaceId) {
       throw new ForbiddenException('Source service not found or not accessible');
     }
     if (consumer.projectId !== source.projectId) {
@@ -438,15 +485,21 @@ export class EnvironmentsService {
    * Get all environment variable references for a service.
    */
   async getReferences(userId: string, serviceId: string): Promise<any[]> {
-    // Verify ownership
+    // Verify ownership via workspace
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
       include: { project: true },
     });
 
-    if (!service || service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this service');
+    if (!service) {
+      throw new NotFoundException('Service not found');
     }
+
+    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     const references = await this.prisma.envVarReference.findMany({
       where: { serviceId },
@@ -485,9 +538,10 @@ export class EnvironmentsService {
       throw new NotFoundException('Reference not found');
     }
 
-    if (reference.service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to delete this reference');
-    }
+    await this.checkWorkspaceAccess(userId, reference.service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     await this.prisma.envVarReference.delete({
       where: { id: referenceId },

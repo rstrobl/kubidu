@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { RepositoryProvider, ServiceType } from '@kubidu/shared';
+import { RepositoryProvider, ServiceType, WorkspaceRole } from '@kubidu/shared';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -70,9 +70,80 @@ class ApiService {
     return response.data;
   }
 
+  // Workspace endpoints
+  async getWorkspaces() {
+    const response = await this.client.get('/workspaces');
+    return response.data;
+  }
+
+  async getWorkspace(id: string) {
+    const response = await this.client.get(`/workspaces/${id}`);
+    return response.data;
+  }
+
+  async createWorkspace(data: { name: string; avatarUrl?: string }) {
+    const response = await this.client.post('/workspaces', data);
+    return response.data;
+  }
+
+  async updateWorkspace(id: string, data: { name?: string; avatarUrl?: string }) {
+    const response = await this.client.patch(`/workspaces/${id}`, data);
+    return response.data;
+  }
+
+  async deleteWorkspace(id: string) {
+    const response = await this.client.delete(`/workspaces/${id}`);
+    return response.data;
+  }
+
+  async getWorkspaceMembers(workspaceId: string) {
+    const response = await this.client.get(`/workspaces/${workspaceId}/members`);
+    return response.data;
+  }
+
+  async updateMemberRole(workspaceId: string, memberId: string, data: { role: WorkspaceRole }) {
+    const response = await this.client.patch(`/workspaces/${workspaceId}/members/${memberId}`, data);
+    return response.data;
+  }
+
+  async removeMember(workspaceId: string, memberId: string) {
+    const response = await this.client.delete(`/workspaces/${workspaceId}/members/${memberId}`);
+    return response.data;
+  }
+
+  async leaveWorkspace(workspaceId: string) {
+    const response = await this.client.post(`/workspaces/${workspaceId}/leave`);
+    return response.data;
+  }
+
+  async getWorkspaceInvitations(workspaceId: string) {
+    const response = await this.client.get(`/workspaces/${workspaceId}/invitations`);
+    return response.data;
+  }
+
+  async inviteMember(workspaceId: string, data: { email: string; role: WorkspaceRole }) {
+    const response = await this.client.post(`/workspaces/${workspaceId}/invitations`, data);
+    return response.data;
+  }
+
+  async cancelInvitation(workspaceId: string, invitationId: string) {
+    const response = await this.client.delete(`/workspaces/${workspaceId}/invitations/${invitationId}`);
+    return response.data;
+  }
+
+  async getInvitation(token: string) {
+    const response = await this.client.get(`/invitations/${token}`);
+    return response.data;
+  }
+
+  async acceptInvitation(token: string) {
+    const response = await this.client.post(`/invitations/${token}/accept`);
+    return response.data;
+  }
+
   // Project endpoints
-  async getProjects() {
-    const response = await this.client.get('/projects');
+  async getProjects(workspaceId: string) {
+    const response = await this.client.get('/projects', { params: { workspaceId } });
     return response.data;
   }
 
@@ -81,11 +152,11 @@ class ApiService {
     return response.data;
   }
 
-  async createProject(data: {
+  async createProject(workspaceId: string, data: {
     name: string;
     description?: string;
   }) {
-    const response = await this.client.post('/projects', data);
+    const response = await this.client.post('/projects', data, { params: { workspaceId } });
     return response.data;
   }
 
@@ -173,11 +244,11 @@ class ApiService {
   }
 
   // Deployment endpoints
-  async getDeployments(serviceId?: string) {
+  async getDeployments(serviceId?: string, workspaceId?: string) {
     const params = new URLSearchParams();
     if (serviceId) params.append('serviceId', serviceId);
-    const query = params.toString();
-    const response = await this.client.get(`/deployments${query ? `?${query}` : ''}`);
+    if (workspaceId) params.append('workspaceId', workspaceId);
+    const response = await this.client.get(`/deployments?${params.toString()}`);
     return response.data;
   }
 
@@ -396,6 +467,46 @@ class ApiService {
 
   async getVolume(projectId: string, id: string) {
     const response = await this.client.get(`/projects/${projectId}/volumes/${id}`);
+    return response.data;
+  }
+
+  // Notification endpoints
+  async getNotifications(options: { limit?: number; offset?: number; unreadOnly?: boolean } = {}) {
+    const params = new URLSearchParams();
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+    if (options.unreadOnly) params.append('unreadOnly', 'true');
+    const response = await this.client.get(`/notifications?${params.toString()}`);
+    return response.data;
+  }
+
+  async getUnreadNotificationCount() {
+    const response = await this.client.get('/notifications/unread-count');
+    return response.data;
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    const response = await this.client.patch(`/notifications/${notificationId}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead() {
+    const response = await this.client.patch('/notifications/read-all');
+    return response.data;
+  }
+
+  async deleteNotification(notificationId: string) {
+    const response = await this.client.delete(`/notifications/${notificationId}`);
+    return response.data;
+  }
+
+  async getNotificationPreferences() {
+    const response = await this.client.get('/notifications/preferences');
+    return response.data;
+  }
+
+  async updateNotificationPreferences(updates: Record<string, boolean>) {
+    const response = await this.client.patch('/notifications/preferences', updates);
     return response.data;
   }
 }

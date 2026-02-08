@@ -1,7 +1,7 @@
-import { Process, Processor } from '@nestjs/bull';
+import { Process, Processor, InjectQueue } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Job } from 'bull';
+import { Job, Queue } from 'bull';
 import { PrismaService } from '../database/prisma.service';
 import { NamespaceManager } from '../k8s/namespace.manager';
 import { SecretManager } from '../k8s/secret.manager';
@@ -11,7 +11,20 @@ import { EncryptionService } from '../services/encryption.service';
 interface DeployJob {
   deploymentId: string;
   projectId: string;
-  userId: string;
+  workspaceId: string;
+}
+
+interface NotificationJob {
+  workspaceId: string;
+  category: 'DEPLOYMENT' | 'BUILD' | 'DOMAIN' | 'SERVICE' | 'WORKSPACE';
+  deploymentId: string;
+  deploymentName: string;
+  deploymentStatus: string;
+  serviceId: string;
+  serviceName: string;
+  projectId: string;
+  projectName: string;
+  errorMessage?: string;
 }
 
 @Processor('deploy')
@@ -25,11 +38,12 @@ export class DeployConsumer {
     private namespaceManager: NamespaceManager,
     private secretManager: SecretManager,
     private deploymentManager: DeploymentManager,
+    @InjectQueue('notification') private notificationQueue: Queue,
   ) {}
 
   @Process()
   async handleDeploy(job: Job<DeployJob>): Promise<void> {
-    const { deploymentId, projectId, userId } = job.data;
+    const { deploymentId, projectId, workspaceId } = job.data;
 
     this.logger.log(`Processing deploy job for deployment ${deploymentId}`);
 
@@ -60,8 +74,8 @@ export class DeployConsumer {
         throw new Error(`Deployment ${deploymentId} not found`);
       }
 
-      // Ensure namespace exists
-      const namespace = await this.namespaceManager.ensureNamespace(userId);
+      // Ensure namespace exists (using workspaceId for tenant isolation)
+      const namespace = await this.namespaceManager.ensureNamespace(workspaceId);
 
       // Merge service-level and deployment-level environment variables
       // Deployment-level variables override service-level ones with the same key
@@ -139,8 +153,8 @@ export class DeployConsumer {
       const config: DeploymentConfig = {
         deploymentId: deployment.id,
         serviceId: deployment.service.id,
-        serviceName: deployment.service.name,
-        name: deployment.name,
+        serviceName: deployment.service.name.toLowerCase(),
+        name: deployment.name.toLowerCase(),
         imageUrl: deployment.imageUrl,
         imageTag: deployment.imageTag || 'latest',
         port: deployment.port,
@@ -255,7 +269,7 @@ export class DeployConsumer {
               select: {
                 project: {
                   select: {
-                    userId: true,
+                    workspaceId: true,
                   },
                 },
               },
@@ -265,7 +279,7 @@ export class DeployConsumer {
 
         if (deployment) {
           const namespace = await this.namespaceManager.ensureNamespace(
-            deployment.service.project.userId,
+            deployment.service.project.workspaceId,
           );
 
           capturedLogs = await this.capturePodLogs(namespace, deployment.name);
@@ -338,7 +352,7 @@ export class DeployConsumer {
     if (status === 'RUNNING') {
       updateData.isActive = true;
 
-      // Get the deployment to find its serviceId and userId
+      // Get the deployment to find its serviceId and workspaceId
       const deployment = await this.prisma.deployment.findUnique({
         where: { id: deploymentId },
         select: {
@@ -347,7 +361,7 @@ export class DeployConsumer {
             select: {
               project: {
                 select: {
-                  userId: true,
+                  workspaceId: true,
                 },
               },
             },
@@ -383,7 +397,7 @@ export class DeployConsumer {
         // Delete Kubernetes resources for stopped deployments
         if (deploymentsToStop.length > 0) {
           const namespace = await this.namespaceManager.ensureNamespace(
-            deployment.service.project.userId,
+            deployment.service.project.workspaceId,
           );
 
           for (const oldDeployment of deploymentsToStop) {
@@ -406,6 +420,56 @@ export class DeployConsumer {
       where: { id: deploymentId },
       data: updateData,
     });
+
+    // Send notification for status change
+    await this.sendDeploymentNotification(deploymentId, status, errorMessage);
+  }
+
+  /**
+   * Send deployment status notification via queue
+   */
+  private async sendDeploymentNotification(
+    deploymentId: string,
+    status: string,
+    errorMessage?: string,
+  ): Promise<void> {
+    try {
+      const deployment = await this.prisma.deployment.findUnique({
+        where: { id: deploymentId },
+        include: {
+          service: {
+            include: {
+              project: true,
+            },
+          },
+        },
+      });
+
+      if (!deployment) return;
+
+      const notificationData: NotificationJob = {
+        workspaceId: deployment.service.project.workspaceId,
+        category: 'DEPLOYMENT',
+        deploymentId: deployment.id,
+        deploymentName: deployment.name,
+        deploymentStatus: status,
+        serviceId: deployment.service.id,
+        serviceName: deployment.service.name,
+        projectId: deployment.service.project.id,
+        projectName: deployment.service.project.name,
+        errorMessage,
+      };
+
+      await this.notificationQueue.add('deployment-status', notificationData, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: true,
+      });
+
+      this.logger.log(`Notification queued for deployment ${deploymentId} status: ${status}`);
+    } catch (error) {
+      this.logger.error(`Failed to queue notification for deployment ${deploymentId}: ${error.message}`);
+    }
   }
 
   /**

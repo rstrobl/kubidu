@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { Project } from '@prisma/client';
+import { Project, WorkspaceRole } from '@prisma/client';
 import { slugify } from '@kubidu/shared';
 
 @Injectable()
@@ -17,13 +17,52 @@ export class ProjectsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, createProjectDto: CreateProjectDto): Promise<Project> {
+  /**
+   * Check if user has required access to workspace.
+   * Throws ForbiddenException if not.
+   */
+  private async checkWorkspaceAccess(
+    userId: string,
+    workspaceId: string,
+    allowedRoles: WorkspaceRole[],
+  ): Promise<void> {
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this workspace');
+    }
+
+    if (!allowedRoles.includes(membership.role)) {
+      throw new ForbiddenException(
+        `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
+      );
+    }
+  }
+
+  async create(
+    userId: string,
+    workspaceId: string,
+    createProjectDto: CreateProjectDto,
+  ): Promise<Project> {
+    // Check workspace access - ADMIN and MEMBER can create projects
+    await this.checkWorkspaceAccess(userId, workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
+
     const slug = slugify(createProjectDto.name);
 
-    // Check if slug already exists for this user
+    // Check if slug already exists in this workspace
     const existing = await this.prisma.project.findFirst({
       where: {
-        userId,
+        workspaceId,
         slug,
         deletedAt: null,
       },
@@ -35,7 +74,7 @@ export class ProjectsService {
 
     const project = await this.prisma.project.create({
       data: {
-        userId,
+        workspaceId,
         name: createProjectDto.name,
         slug,
         description: createProjectDto.description || null,
@@ -43,15 +82,22 @@ export class ProjectsService {
       },
     });
 
-    this.logger.log(`Project created: ${project.id} by user: ${userId}`);
+    this.logger.log(`Project created: ${project.id} in workspace: ${workspaceId} by user: ${userId}`);
 
     return project;
   }
 
-  async findAll(userId: string): Promise<Project[]> {
+  async findAll(userId: string, workspaceId: string): Promise<Project[]> {
+    // Check workspace access - any member can view projects
+    await this.checkWorkspaceAccess(userId, workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
+
     return this.prisma.project.findMany({
       where: {
-        userId,
+        workspaceId,
         deletedAt: null,
       },
       include: {
@@ -104,9 +150,12 @@ export class ProjectsService {
       throw new NotFoundException('Project not found');
     }
 
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
-    }
+    // Check workspace membership - any member can view projects
+    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return project;
   }
@@ -116,7 +165,19 @@ export class ProjectsService {
     projectId: string,
     updateProjectDto: UpdateProjectDto,
   ): Promise<Project> {
-    await this.findOne(userId, projectId);
+    const existingProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!existingProject) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Check workspace access - ADMIN and MEMBER can update projects
+    await this.checkWorkspaceAccess(userId, existingProject.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     const updates: any = {};
 
@@ -144,7 +205,19 @@ export class ProjectsService {
   }
 
   async remove(userId: string, projectId: string): Promise<void> {
-    await this.findOne(userId, projectId);
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Check workspace access - ADMIN and MEMBER can delete projects
+    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     // Soft delete
     await this.prisma.project.update({
@@ -156,5 +229,21 @@ export class ProjectsService {
     });
 
     this.logger.log(`Project deleted: ${projectId}`);
+  }
+
+  /**
+   * Get workspace ID for a project. Used by other services.
+   */
+  async getWorkspaceId(projectId: string): Promise<string> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { workspaceId: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return project.workspaceId;
   }
 }

@@ -9,10 +9,10 @@ export class NamespaceManager {
   constructor(private k8sClient: KubernetesClient) {}
 
   /**
-   * Create or ensure a namespace exists for a user
+   * Create or ensure a namespace exists for a workspace
    */
-  async ensureNamespace(userId: string): Promise<string> {
-    const namespaceName = this.getUserNamespace(userId);
+  async ensureNamespace(workspaceId: string): Promise<string> {
+    const namespaceName = this.getWorkspaceNamespace(workspaceId);
 
     try {
       // Check if namespace exists
@@ -22,10 +22,10 @@ export class NamespaceManager {
     } catch (error) {
       if (error.response?.statusCode === 404) {
         // Create namespace
-        await this.createNamespace(namespaceName, userId);
+        await this.createNamespace(namespaceName, workspaceId);
         // Note: Resource quotas disabled - enforce limits at application/billing level instead
         // await this.createResourceQuota(namespaceName);
-        this.logger.log(`Created namespace ${namespaceName} for user ${userId}`);
+        this.logger.log(`Created namespace ${namespaceName} for workspace ${workspaceId}`);
         return namespaceName;
       }
       throw error;
@@ -35,12 +35,12 @@ export class NamespaceManager {
   /**
    * Create a namespace with labels
    */
-  private async createNamespace(name: string, userId: string): Promise<void> {
+  private async createNamespace(name: string, workspaceId: string): Promise<void> {
     const namespace: V1Namespace = {
       metadata: {
         name,
         labels: {
-          'kubidu.io/user-id': userId,
+          'kubidu.io/workspace-id': workspaceId,
           'kubidu.io/managed': 'true',
         },
       },
@@ -79,8 +79,8 @@ export class NamespaceManager {
   /**
    * Delete a namespace and all its resources
    */
-  async deleteNamespace(userId: string): Promise<void> {
-    const namespaceName = this.getUserNamespace(userId);
+  async deleteNamespace(workspaceId: string): Promise<void> {
+    const namespaceName = this.getWorkspaceNamespace(workspaceId);
 
     try {
       await this.k8sClient.coreApi.deleteNamespace(namespaceName);
@@ -93,9 +93,9 @@ export class NamespaceManager {
   }
 
   /**
-   * Get namespace name for a user
+   * Get namespace name for a workspace
    */
-  getUserNamespace(userId: string): string {
-    return `kubidu-${userId.substring(0, 8)}`;
+  getWorkspaceNamespace(workspaceId: string): string {
+    return `kubidu-${workspaceId.substring(0, 8)}`;
   }
 }

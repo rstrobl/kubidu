@@ -11,6 +11,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DeploymentsService } from './deployments.service';
@@ -34,10 +35,18 @@ export class DeploymentsController {
 
   @Get()
   @ApiOperation({ summary: 'List all deployments' })
-  @ApiQuery({ name: 'serviceId', required: false })
+  @ApiQuery({ name: 'workspaceId', required: false, description: 'Required if serviceId is not provided' })
+  @ApiQuery({ name: 'serviceId', required: false, description: 'Filter by service - workspace is derived from service' })
   @ApiResponse({ status: 200, description: 'Deployments retrieved' })
-  async findAll(@Req() req, @Query('serviceId') serviceId?: string) {
-    return this.deploymentsService.findAll(req.user.id, serviceId);
+  async findAll(
+    @Req() req,
+    @Query('workspaceId') workspaceId?: string,
+    @Query('serviceId') serviceId?: string,
+  ) {
+    if (!workspaceId && !serviceId) {
+      throw new BadRequestException('Either workspaceId or serviceId is required');
+    }
+    return this.deploymentsService.findAll(req.user.id, serviceId, workspaceId);
   }
 
   @Get(':id')

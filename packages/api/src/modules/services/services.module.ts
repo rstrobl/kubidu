@@ -4,12 +4,14 @@ import { ServicesController } from './services.controller';
 import { ServicesService } from './services.service';
 import { DeploymentsModule } from '../deployments/deployments.module';
 import { GitHubModule } from '../github/github.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { EncryptionService } from '../../services/encryption.service';
 import { DockerInspectorService } from './docker-inspector.service';
 
 @Module({
   imports: [
     forwardRef(() => DeploymentsModule),
+    forwardRef(() => NotificationsModule),
     GitHubModule,
     BullModule.registerQueue({ name: 'build' }),
   ],

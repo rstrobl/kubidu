@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   Handle,
   Position,
   useNodesState,
+  useReactFlow,
   type Node,
   type Edge,
   type NodeProps,
@@ -167,6 +169,7 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
   const displayStatus = getServiceDisplayStatus(service);
   const volumes = service.volumes || [];
 
+  const isInProgress = displayStatus.status === 'in-progress';
   const borderColor =
     displayStatus.status === 'running' ? 'border-green-400' :
     displayStatus.status === 'in-progress' ? 'border-yellow-400' :
@@ -179,7 +182,11 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
   return (
     <div
       onClick={() => onSelect(service.id)}
-      className={`bg-white rounded-xl shadow-sm border-2 ${borderColor} px-3 py-3 cursor-pointer hover:shadow-md transition-all w-[220px] group relative`}
+      className={`bg-white rounded-xl shadow-sm border-2 ${borderColor} px-3 py-3 cursor-pointer hover:shadow-md transition-all w-[220px] group relative ${isInProgress ? 'animate-pulse-border' : ''}`}
+      style={isInProgress ? {
+        animation: 'pulse-border 2s ease-in-out infinite',
+        boxShadow: '0 0 0 0 rgba(234, 179, 8, 0.4)',
+      } : undefined}
     >
       <Handle type="target" position={Position.Left} id="target-left" className="!opacity-0 !w-1 !h-1 !min-w-0 !min-h-0 !-left-px" />
       <Handle type="target" position={Position.Right} id="target-right" className="!opacity-0 !w-1 !h-1 !min-w-0 !min-h-0 !-right-px" />
@@ -346,11 +353,28 @@ function deleteGroupName(projectId: string, groupId: string) {
   } catch {}
 }
 
-export function ServiceCanvas({ projectId, services, onServiceSelect, onServicesDeleted }: ServiceCanvasProps) {
+function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDeleted }: ServiceCanvasProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [customGroupNames, setCustomGroupNames] = useState<Record<string, string>>(() => getGroupNames(projectId));
+  // Track z-index order: map of groupId -> z-index value. Higher = more in front
+  const [groupZIndexMap, setGroupZIndexMap] = useState<Record<string, number>>({});
+  const zIndexCounterRef = useRef(0);
+
+  // Bring a group to the front (using large z-index values to ensure they're above React Flow defaults)
+  const bringGroupToFront = useCallback((groupId: string) => {
+    setGroupZIndexMap(prev => {
+      const currentMax = Math.max(100, ...Object.values(prev));
+      // Only update if this group isn't already at the top
+      if (prev[groupId] === currentMax) return prev;
+      zIndexCounterRef.current = currentMax + 10;
+      return { ...prev, [groupId]: zIndexCounterRef.current };
+    });
+  }, []);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { fitView } = useReactFlow();
+  const prevServiceCountRef = useRef(0);
+  const initialFitDoneRef = useRef(false);
 
   // Helper to get group name (custom or inferred)
   const getGroupLabel = useCallback((groupId: string, groupServices: any[], templateDeploymentId: string) => {
@@ -399,38 +423,67 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
       }
     }
 
-    let nextY = START_Y;
+    // First pass: collect all groups with their dimensions and saved positions
+    const groupInfos: { groupId: string; templateDeploymentId: string; services: any[]; width: number; height: number; savedPos?: { x: number; y: number } }[] = [];
 
-    // Create group nodes with their children
     groups.forEach((groupServices, templateDeploymentId) => {
       const groupId = `group-${templateDeploymentId}`;
       const cols = Math.min(groupServices.length, 2);
       const rows = Math.ceil(groupServices.length / 2);
       const width = GROUP_PADDING * 2 + (cols - 1) * ITEM_GAP_X + SERVICE_NODE_WIDTH;
       const height = GROUP_HEADER_HEIGHT + GROUP_PADDING * 2 + (rows - 1) * ITEM_GAP_Y + SERVICE_NODE_HEIGHT;
-
-      // Use saved position or auto-layout
       const savedPos = groupPositions[groupId];
-      const groupX = savedPos?.x ?? START_X;
-      const groupY = savedPos?.y ?? nextY;
 
-      // Save position if new
-      if (!savedPos) {
-        saveGroupPosition(projectId, groupId, { x: groupX, y: groupY });
+      groupInfos.push({ groupId, templateDeploymentId, services: groupServices, width, height, savedPos });
+    });
+
+    // Collect positions of groups that already have saved positions
+    const existingGroups: { y: number; height: number }[] = [];
+    for (const info of groupInfos) {
+      if (info.savedPos) {
+        existingGroups.push({ y: info.savedPos.y, height: info.height });
       }
+    }
+
+    // Create group nodes with their children
+    for (const { groupId, templateDeploymentId, services: groupServices, width, height, savedPos } of groupInfos) {
+      let groupX = savedPos?.x ?? START_X;
+      let groupY = savedPos?.y;
+
+      // If no saved position, find empty space below all existing groups
+      if (groupY === undefined) {
+        // Find the lowest point of all existing groups
+        let maxBottom = START_Y;
+        for (const existing of existingGroups) {
+          const bottom = existing.y + existing.height + 50; // 50px gap between groups
+          if (bottom > maxBottom) {
+            maxBottom = bottom;
+          }
+        }
+        groupY = maxBottom;
+        // Save the new position and add to existing groups list
+        saveGroupPosition(projectId, groupId, { x: groupX, y: groupY });
+        existingGroups.push({ y: groupY, height });
+      }
+
+      // Track this group for standalone services positioning
+      existingGroups.push({ y: groupY, height });
+
+      // Get z-index from the map, default to 0
+      const groupZIndex = groupZIndexMap[groupId] ?? 0;
 
       result.push({
         id: groupId,
         type: 'groupNode',
         position: { x: groupX, y: groupY },
         style: { width, height },
-        zIndex: -1,
+        zIndex: groupZIndex,
         draggable: true,
         selectable: false,
         data: { label: getGroupLabel(groupId, groupServices, templateDeploymentId), serviceCount: groupServices.length, width, height },
       });
 
-      // Add child service nodes
+      // Add child service nodes with same z-index as parent group
       groupServices.forEach((svc: any, idx: number) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
@@ -441,11 +494,19 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
           extent: 'parent' as const,
           position: { x: GROUP_PADDING + col * ITEM_GAP_X, y: GROUP_HEADER_HEIGHT + GROUP_PADDING + row * ITEM_GAP_Y },
           data: { service: svc, onSelect: onServiceSelect },
+          zIndex: groupZIndex,
         });
       });
+    }
 
-      nextY += height + 50;
-    });
+    // Calculate the starting Y position for standalone services (below all groups)
+    let standaloneStartY = START_Y;
+    for (const existing of existingGroups) {
+      const bottom = existing.y + existing.height + 50;
+      if (bottom > standaloneStartY) {
+        standaloneStartY = bottom;
+      }
+    }
 
     // Add standalone services
     standalone.forEach((svc: any, idx: number) => {
@@ -456,20 +517,44 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
       result.push({
         id: svc.id,
         type: 'serviceNode',
-        position: hasPos ? { x: svc.canvasX, y: svc.canvasY } : { x: START_X + col * ITEM_GAP_X, y: nextY + row * ITEM_GAP_Y },
+        position: hasPos ? { x: svc.canvasX, y: svc.canvasY } : { x: START_X + col * ITEM_GAP_X, y: standaloneStartY + row * ITEM_GAP_Y },
         data: { service: svc, onSelect: onServiceSelect },
+        zIndex: 1,
       });
     });
 
     return result;
-  }, [services, onServiceSelect, projectId, getGroupLabel]);
+  }, [services, onServiceSelect, projectId, getGroupLabel, groupZIndexMap]);
 
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
 
-  // Update nodes when services change
-  useMemo(() => {
+  // Update nodes when nodes change (services, z-index, etc.)
+  useEffect(() => {
     setFlowNodes(nodes);
   }, [nodes, setFlowNodes]);
+
+  // Fit view when services are loaded or new services are added
+  useEffect(() => {
+    const currentCount = services.length;
+    const prevCount = prevServiceCountRef.current;
+
+    // Fit view on initial load (when services first appear) or when new services are added
+    if (currentCount > 0 && (currentCount > prevCount || !initialFitDoneRef.current)) {
+      // Small delay to let nodes render first
+      setTimeout(() => {
+        fitView({ padding: 0.3, duration: 300 });
+        initialFitDoneRef.current = true;
+      }, 100);
+    }
+
+    prevServiceCountRef.current = currentCount;
+  }, [services.length, fitView]);
+
+  // Reset initial fit flag when project changes
+  useEffect(() => {
+    initialFitDoneRef.current = false;
+    prevServiceCountRef.current = 0;
+  }, [projectId]);
 
   const edges = useMemo(() => {
     const positions = new Map(flowNodes.map(n => [n.id, n.position]));
@@ -500,10 +585,18 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
     return result;
   }, [services, flowNodes]);
 
+  // Bring group to foreground when dragging starts
+  const onNodeDragStart: OnNodeDrag = useCallback((_event, node) => {
+    const groupId = node.id.startsWith('group-') ? node.id : node.parentId;
+    if (groupId) {
+      bringGroupToFront(groupId);
+    }
+  }, [bringGroupToFront]);
+
   const onNodeDragStop: OnNodeDrag = useCallback((_event, node) => {
     if (node.id.startsWith('group-')) {
       saveGroupPosition(projectId, node.id, node.position);
-    } else {
+    } else if (!node.parentId) {
       apiService.updateService(projectId, node.id, { canvasX: node.position.x, canvasY: node.position.y }).catch(console.error);
     }
   }, [projectId]);
@@ -609,8 +702,20 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
     setContextMenu(null);
   }, [contextMenu, projectId]);
 
-  // Close context menu on pane click, node click, or escape key
+  // Close context menu on pane click or escape key
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  // Handle node click - bring to foreground and close context menu
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setContextMenu(null);
+
+    // Find the group ID (either the node itself if it's a group, or its parent)
+    const groupId = node.id.startsWith('group-') ? node.id : node.parentId;
+
+    if (groupId) {
+      bringGroupToFront(groupId);
+    }
+  }, [bringGroupToFront]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -626,16 +731,23 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
         nodes={flowNodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         onNodeContextMenu={onNodeContextMenu}
         onPaneClick={closeContextMenu}
-        onNodeClick={closeContextMenu}
+        onNodeClick={handleNodeClick}
         onMove={closeContextMenu}
         nodeTypes={nodeTypes}
         nodesConnectable={false}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
+        fitViewOptions={{ padding: 0.3, minZoom: 0.5, maxZoom: 1.5 }}
+        minZoom={0.1}
+        maxZoom={2}
         proOptions={{ hideAttribution: true }}
+        onInit={() => {
+          // Ensure fitView runs after ReactFlow is initialized
+          setTimeout(() => fitView({ padding: 0.3 }), 50);
+        }}
       >
         <Background gap={16} size={1} />
         <Controls className="!scale-150 origin-bottom-left !left-5 !bottom-5" />
@@ -681,5 +793,14 @@ export function ServiceCanvas({ projectId, services, onServiceSelect, onServices
         </div>
       )}
     </div>
+  );
+}
+
+// Wrapper component to provide ReactFlow context
+export function ServiceCanvas(props: ServiceCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <ServiceCanvasInner {...props} />
+    </ReactFlowProvider>
   );
 }

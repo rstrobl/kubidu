@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { useWorkspaceStore } from '../stores/workspace.store';
 
 export function Projects() {
   const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspaceStore();
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (currentWorkspace) {
+      loadProjects();
+    }
+  }, [currentWorkspace?.id]);
 
   const loadProjects = async () => {
+    if (!currentWorkspace) return;
     try {
       setIsLoading(true);
-      const data = await apiService.getProjects();
+      const data = await apiService.getProjects(currentWorkspace.id);
       setProjects(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load projects');

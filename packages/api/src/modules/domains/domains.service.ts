@@ -4,10 +4,13 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
-import { Domain } from '@prisma/client';
+import { Domain, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateDomainDto } from './dto/create-domain.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 import * as dns from 'dns';
 import { promisify } from 'util';
@@ -19,22 +22,50 @@ const resolveCname = promisify(dns.resolveCname);
 export class DomainsService {
   private readonly logger = new Logger(DomainsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
+  ) {}
+
+  /**
+   * Check if user has access to a workspace with required roles
+   */
+  private async checkWorkspaceAccess(
+    userId: string,
+    workspaceId: string,
+    allowedRoles: WorkspaceRole[],
+  ): Promise<void> {
+    const member = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: { userId, workspaceId },
+      },
+    });
+
+    if (!member || !allowedRoles.includes(member.role)) {
+      throw new ForbiddenException('You do not have permission to access this resource');
+    }
+  }
 
   async create(
     userId: string,
     serviceId: string,
     createDomainDto: CreateDomainDto,
   ): Promise<Domain> {
-    // Verify service ownership
+    // Verify service ownership via workspace
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
       include: { project: true },
     });
 
-    if (!service || service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to modify this service');
+    if (!service) {
+      throw new NotFoundException('Service not found');
     }
+
+    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     // Check if domain already exists
     const existing = await this.prisma.domain.findUnique({
@@ -62,15 +93,21 @@ export class DomainsService {
   }
 
   async findAll(userId: string, serviceId: string): Promise<Domain[]> {
-    // Verify service ownership
+    // Verify service ownership via workspace
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
       include: { project: true },
     });
 
-    if (!service || service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this service');
+    if (!service) {
+      throw new NotFoundException('Service not found');
     }
+
+    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return this.prisma.domain.findMany({
       where: { serviceId },
@@ -88,9 +125,10 @@ export class DomainsService {
       throw new NotFoundException('Domain not found');
     }
 
-    if (domain.service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to verify this domain');
-    }
+    await this.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     if (domain.isVerified) {
       return domain;
@@ -154,7 +192,51 @@ export class DomainsService {
     });
 
     this.logger.log(`Domain ${domain.domain} successfully verified`);
+
+    // Send notification for domain verification
+    await this.sendDomainNotification(updatedDomain, domain.service);
+
     return updatedDomain;
+  }
+
+  private async sendDomainNotification(
+    domain: Domain,
+    service: { id: string; name: string; project: { id: string; name?: string; workspaceId: string } },
+  ): Promise<void> {
+    try {
+      const members = await this.prisma.workspaceMember.findMany({
+        where: { workspaceId: service.project.workspaceId },
+        select: { userId: true },
+      });
+
+      const userIds = members.map((m) => m.userId);
+      if (userIds.length === 0) return;
+
+      const project = await this.prisma.project.findUnique({
+        where: { id: service.project.id },
+        select: { name: true },
+      });
+
+      await this.notificationsService.notifyDomainVerification(
+        service.project.workspaceId,
+        userIds,
+        {
+          id: domain.id,
+          domain: domain.domain,
+          isVerified: domain.isVerified,
+        },
+        {
+          id: service.id,
+          name: service.name,
+        },
+        {
+          id: service.project.id,
+          name: project?.name || 'Unknown Project',
+        },
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send domain notification: ${error.message}`);
+    }
   }
 
   async delete(userId: string, domainId: string): Promise<void> {
@@ -167,9 +249,10 @@ export class DomainsService {
       throw new NotFoundException('Domain not found');
     }
 
-    if (domain.service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to delete this domain');
-    }
+    await this.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
     await this.prisma.domain.delete({
       where: { id: domainId },

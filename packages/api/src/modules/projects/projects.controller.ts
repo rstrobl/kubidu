@@ -6,12 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -26,17 +28,29 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
+  @ApiQuery({ name: 'workspaceId', required: true, description: 'Workspace ID' })
   @ApiResponse({ status: 201, description: 'Project created successfully' })
   @ApiResponse({ status: 409, description: 'Project with this name already exists' })
-  async create(@Req() req, @Body() createProjectDto: CreateProjectDto) {
-    return this.projectsService.create(req.user.id, createProjectDto);
+  async create(
+    @Req() req,
+    @Query('workspaceId') workspaceId: string,
+    @Body() createProjectDto: CreateProjectDto,
+  ) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    return this.projectsService.create(req.user.id, workspaceId, createProjectDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all projects for current user' })
+  @ApiOperation({ summary: 'List all projects for a workspace' })
+  @ApiQuery({ name: 'workspaceId', required: true, description: 'Workspace ID' })
   @ApiResponse({ status: 200, description: 'Projects retrieved' })
-  async findAll(@Req() req) {
-    return this.projectsService.findAll(req.user.id);
+  async findAll(@Req() req, @Query('workspaceId') workspaceId: string) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    return this.projectsService.findAll(req.user.id, workspaceId);
   }
 
   @Get(':id')

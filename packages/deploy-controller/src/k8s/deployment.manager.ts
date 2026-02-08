@@ -769,7 +769,7 @@ export class DeploymentManager {
             containers: [
               {
                 name: config.name,
-                image: `${config.imageUrl}:${config.imageTag}`,
+                image: config.imageUrl.includes(':') ? config.imageUrl : `${config.imageUrl}:${config.imageTag}`,
                 ...(config.startCommand ? { command: ['/bin/sh', '-c', config.startCommand] } : {}),
                 ports: [
                   {

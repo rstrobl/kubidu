@@ -17,6 +17,9 @@ import { GitHubModule } from './modules/github/github.module';
 import { UsageStatsModule } from './modules/usage-stats/usage-stats.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { VolumesModule } from './modules/volumes/volumes.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { EmailModule } from './modules/email/email.module';
 import { AuditLoggerMiddleware } from './middleware/audit-logger.middleware';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 
@@ -69,6 +72,9 @@ import { RequestIdMiddleware } from './middleware/request-id.middleware';
     UsageStatsModule,
     TemplatesModule,
     VolumesModule,
+    WorkspacesModule,
+    NotificationsModule,
+    EmailModule,
   ],
 })
 export class AppModule implements NestModule {

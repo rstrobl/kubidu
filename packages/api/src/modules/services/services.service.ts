@@ -13,8 +13,9 @@ import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { Service } from '@prisma/client';
+import { Service, WorkspaceRole } from '@prisma/client';
 import { DeploymentsService } from '../deployments/deployments.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { EncryptionService } from '../../services/encryption.service';
 import { ConfigService } from '@nestjs/config';
 import { DockerInspectorService } from './docker-inspector.service';
@@ -32,27 +33,79 @@ export class ServicesService {
     private readonly dockerInspector: DockerInspectorService,
     @Inject(forwardRef(() => DeploymentsService))
     private readonly deploymentsService: DeploymentsService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
     private readonly gitHubAppService: GitHubAppService,
     @InjectQueue('build') private readonly buildQueue: Queue,
   ) {}
 
-  async create(
+  /**
+   * Check if user has required access to workspace via project.
+   * Throws ForbiddenException if not.
+   */
+  private async checkWorkspaceAccessViaProject(
     userId: string,
     projectId: string,
-    createServiceDto: CreateServiceDto,
-  ): Promise<Service> {
-    // Verify project exists and belongs to user
+    allowedRoles: WorkspaceRole[],
+  ): Promise<{ workspaceId: string }> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
+      select: { workspaceId: true },
     });
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId,
+          workspaceId: project.workspaceId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this workspace');
     }
+
+    if (!allowedRoles.includes(membership.role)) {
+      throw new ForbiddenException(
+        `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
+      );
+    }
+
+    return { workspaceId: project.workspaceId };
+  }
+
+  /**
+   * Get all member user IDs for a workspace
+   */
+  private async getWorkspaceMemberIds(workspaceId: string): Promise<string[]> {
+    const members = await this.prisma.workspaceMember.findMany({
+      where: { workspaceId },
+      select: { userId: true },
+    });
+    return members.map((m) => m.userId);
+  }
+
+  async create(
+    userId: string,
+    projectId: string,
+    createServiceDto: CreateServiceDto,
+  ): Promise<Service> {
+    // Verify workspace access - ADMIN and MEMBER can create services
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
+
+    // Get project info for notifications
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, name: true },
+    });
 
     // Check if service name already exists in this project
     const existing = await this.prisma.service.findFirst({
@@ -110,6 +163,20 @@ export class ServicesService {
 
     this.logger.log(`Service created: ${service.id} for project: ${projectId} by user: ${userId}`);
 
+    // Send notification to workspace members
+    try {
+      const memberIds = await this.getWorkspaceMemberIds(workspaceId);
+      await this.notificationsService.notifyServiceEvent(
+        workspaceId,
+        memberIds,
+        'CREATED',
+        { id: service.id, name: service.name },
+        { id: projectId, name: project?.name || 'Unknown' },
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send service creation notification: ${error.message}`);
+    }
+
     // Create system environment variables
     await this.createSystemEnvironmentVariables(service.id, service.name, null, null);
 
@@ -150,18 +217,12 @@ export class ServicesService {
   }
 
   async findAll(userId: string, projectId: string): Promise<Service[]> {
-    // Verify project belongs to user
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    if (project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this project');
-    }
+    // Verify workspace access - any member can view services
+    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     // Get services with consuming references for canvas connections
     const services = await this.prisma.service.findMany({
@@ -226,9 +287,12 @@ export class ServicesService {
       throw new NotFoundException('Service not found in this project');
     }
 
-    if (service.project.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this service');
-    }
+    // Verify workspace access - any member can view services
+    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
 
     return service;
   }
@@ -239,7 +303,20 @@ export class ServicesService {
     serviceId: string,
     updateServiceDto: UpdateServiceDto,
   ): Promise<Service> {
-    const service = await this.findOne(userId, projectId, serviceId);
+    // Verify workspace access - ADMIN and MEMBER can update services
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    if (!service || service.projectId !== projectId) {
+      throw new NotFoundException('Service not found');
+    }
 
     // If subdomain is being updated, check for uniqueness
     if (updateServiceDto.subdomain !== undefined) {
@@ -291,6 +368,20 @@ export class ServicesService {
 
     this.logger.log(`Service updated: ${serviceId} by user: ${userId}`);
 
+    // Send notification to workspace members
+    try {
+      const memberIds = await this.getWorkspaceMemberIds(workspaceId);
+      await this.notificationsService.notifyServiceEvent(
+        workspaceId,
+        memberIds,
+        'UPDATED',
+        { id: updatedService.id, name: updatedService.name },
+        { id: projectId, name: service.project?.name || 'Unknown' },
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send service update notification: ${error.message}`);
+    }
+
     // Update system environment variables if name changed
     if (updateServiceDto.name !== undefined) {
       await this.createSystemEnvironmentVariables(
@@ -331,32 +422,59 @@ export class ServicesService {
   }
 
   async remove(userId: string, projectId: string, serviceId: string): Promise<void> {
-    const service = await this.findOne(userId, projectId, serviceId);
+    // Verify workspace access - ADMIN and MEMBER can delete services
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    if (!service || service.projectId !== projectId) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const serviceName = service.name;
+    const projectName = service.project?.name || 'Unknown';
 
     await this.prisma.service.delete({
       where: { id: serviceId },
     });
 
     this.logger.log(`Service deleted: ${serviceId} by user: ${userId}`);
+
+    // Send notification to workspace members
+    try {
+      const memberIds = await this.getWorkspaceMemberIds(workspaceId);
+      await this.notificationsService.notifyServiceEvent(
+        workspaceId,
+        memberIds,
+        'DELETED',
+        { id: serviceId, name: serviceName },
+        { id: projectId, name: projectName },
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send service deletion notification: ${error.message}`);
+    }
   }
 
   async removeMany(userId: string, projectId: string, serviceIds: string[]): Promise<{ deleted: number }> {
-    // Validate project ownership once
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, userId },
-    });
+    // Validate workspace access - ADMIN and MEMBER can delete services
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+    ]);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    // Verify all services belong to this project
+    // Verify all services belong to this project and get their names
     const services = await this.prisma.service.findMany({
       where: {
         id: { in: serviceIds },
         projectId,
       },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     const foundIds = new Set(services.map((s) => s.id));
@@ -364,6 +482,12 @@ export class ServicesService {
     if (missingIds.length > 0) {
       throw new NotFoundException(`Services not found: ${missingIds.join(', ')}`);
     }
+
+    // Get project name for notifications
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, name: true },
+    });
 
     // Delete all services in a single transaction
     const result = await this.prisma.service.deleteMany({
@@ -374,6 +498,22 @@ export class ServicesService {
     });
 
     this.logger.log(`Deleted ${result.count} services from project ${projectId} by user ${userId}`);
+
+    // Send notifications for each deleted service
+    try {
+      const memberIds = await this.getWorkspaceMemberIds(workspaceId);
+      for (const service of services) {
+        await this.notificationsService.notifyServiceEvent(
+          workspaceId,
+          memberIds,
+          'DELETED',
+          { id: service.id, name: service.name },
+          { id: projectId, name: project?.name || 'Unknown' },
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Failed to send service deletion notifications: ${error.message}`);
+    }
 
     return { deleted: result.count };
   }

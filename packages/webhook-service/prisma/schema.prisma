@@ -41,6 +41,14 @@ enum VolumeStatus {
   FAILED
 }
 
+enum NotificationCategory {
+  DEPLOYMENT
+  BUILD
+  DOMAIN
+  SERVICE
+  WORKSPACE
+}
+
 enum ServiceStatus {
   ACTIVE
   INACTIVE
@@ -71,6 +79,13 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+// Workspace member roles
+enum WorkspaceRole {
+  ADMIN    // Full access: billing, members, settings, projects
+  MEMBER   // Can create/manage projects and services
+  DEPLOYER // Can only deploy, view logs, read-only on projects
+}
+
 // User accounts
 model User {
   id               String     @id @default(uuid())
@@ -87,19 +102,79 @@ model User {
   lastLoginAt      DateTime?  @map("last_login_at")
   deletedAt        DateTime?  @map("deleted_at")
 
-  projects              Project[]
-  apiKeys               ApiKey[]
-  subscriptions         Subscription[]
-  usageRecords          UsageRecord[]
-  invoices              Invoice[]
-  notifications         Notification[]
-  gdprConsents          GdprConsent[]
+  apiKeys                  ApiKey[]
+  notifications            Notification[]
+  notificationPreferences  NotificationPreference?
+  gdprConsents             GdprConsent[]
   gdprRequests          GdprDataRequest[]
   auditLogs             AuditLog[]
   githubInstallations   GitHubInstallation[]
+  workspaceMemberships  WorkspaceMember[]
+  sentInvitations       WorkspaceInvitation[]
 
   @@index([email])
   @@map("users")
+}
+
+// Workspaces (multi-tenant organization layer)
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members       WorkspaceMember[]
+  invitations   WorkspaceInvitation[]
+  projects      Project[]
+  subscription  Subscription?
+  invoices      Invoice[]
+  usageRecords  UsageRecord[]
+  notifications Notification[]
+
+  @@index([slug])
+  @@map("workspaces")
+}
+
+// Workspace membership (many-to-many User <-> Workspace with role)
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("workspace_members")
+}
+
+// Workspace invitations (pending invites sent via email)
+model WorkspaceInvitation {
+  id          String        @id @default(uuid())
+  workspaceId String        @map("workspace_id")
+  email       String
+  role        WorkspaceRole @default(MEMBER)
+  token       String        @unique
+  invitedById String        @map("invited_by_id")
+  expiresAt   DateTime      @map("expires_at")
+  acceptedAt  DateTime?     @map("accepted_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation(fields: [invitedById], references: [id])
+
+  @@unique([workspaceId, email])
+  @@index([token])
+  @@index([workspaceId])
+  @@index([email])
+  @@map("workspace_invitations")
 }
 
 // API keys for CLI authentication
@@ -125,7 +200,7 @@ model ApiKey {
 // Projects (container for services)
 model Project {
   id          String        @id @default(uuid())
-  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
   name        String
   slug        String
   description String?
@@ -134,14 +209,14 @@ model Project {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   deletedAt   DateTime?     @map("deleted_at")
 
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   services            Service[]
   templateDeployments TemplateDeployment[]
   volumes             Volume[]
 
-  @@unique([userId, slug])
-  @@index([userId])
-  @@index([userId, status])
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([workspaceId, status])
   @@map("projects")
 }
 
@@ -364,10 +439,10 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-// Subscriptions (Stripe)
+// Subscriptions (Stripe) - tied to Workspace for billing
 model Subscription {
   id                   String             @id @default(uuid())
-  userId               String             @map("user_id")
+  workspaceId          String             @unique @map("workspace_id")
   stripeCustomerId     String?            @map("stripe_customer_id")
   stripeSubscriptionId String?            @map("stripe_subscription_id")
   plan                 SubscriptionPlan
@@ -378,17 +453,17 @@ model Subscription {
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([workspaceId])
   @@index([stripeCustomerId])
   @@map("subscriptions")
 }
 
-// Usage tracking
+// Usage tracking - tied to Workspace for billing
 model UsageRecord {
   id            String   @id @default(uuid())
-  userId        String   @map("user_id")
+  workspaceId   String   @map("workspace_id")
   resourceType  String   @map("resource_type")
   amount        Float
   unit          String
@@ -398,19 +473,19 @@ model UsageRecord {
   deploymentId  String?  @map("deployment_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([userId, billingPeriod])
+  @@index([workspaceId, billingPeriod])
   @@index([recordedAt])
   @@index([projectId, billingPeriod])
   @@index([deploymentId, recordedAt])
   @@map("usage_records")
 }
 
-// Invoices
+// Invoices - tied to Workspace for billing
 model Invoice {
   id              String    @id @default(uuid())
-  userId          String    @map("user_id")
+  workspaceId     String    @map("workspace_id")
   stripeInvoiceId String?   @map("stripe_invoice_id")
   amount          Float
   currency        String    @default("usd")
@@ -419,9 +494,9 @@ model Invoice {
   paidAt          DateTime? @map("paid_at")
   createdAt       DateTime  @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([workspaceId])
   @@index([stripeInvoiceId])
   @@map("invoices")
 }
@@ -500,19 +575,41 @@ model EnvVarReference {
 
 // Notifications
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  type      String
-  title     String
-  message   String
-  read      Boolean   @default(false)
-  readAt    DateTime? @map("read_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id          String               @id @default(uuid())
+  userId      String               @map("user_id")
+  workspaceId String               @map("workspace_id")
+  category    NotificationCategory
+  title       String
+  message     String
+  actionUrl   String?              @map("action_url")
+  metadata    Json?
+  isRead      Boolean              @default(false) @map("is_read")
+  emailSent   Boolean              @default(false) @map("email_sent")
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([workspaceId])
+  @@map("notifications")
+}
+
+// Notification preferences
+model NotificationPreference {
+  id                  String  @id @default(uuid())
+  userId              String  @unique @map("user_id")
+  emailDeploySuccess  Boolean @default(true) @map("email_deploy_success")
+  emailDeployFailed   Boolean @default(true) @map("email_deploy_failed")
+  emailBuildFailed    Boolean @default(true) @map("email_build_failed")
+  emailDomainVerified Boolean @default(true) @map("email_domain_verified")
+  emailInvitations    Boolean @default(true) @map("email_invitations")
+  emailRoleChanges    Boolean @default(true) @map("email_role_changes")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, read])
-  @@map("notifications")
+  @@map("notification_preferences")
 }
 
 // Templates (pre-defined multi-service application stacks)

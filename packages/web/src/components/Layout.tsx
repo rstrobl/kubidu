@@ -1,11 +1,17 @@
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../stores/auth.store';
+import { useWorkspaceStore } from '../stores/workspace.store';
 import { apiService } from '../services/api.service';
 import { ProjectSettingsModal } from './ProjectSettingsModal';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { NotificationBell } from './NotificationBell';
+import { useNotificationSocket } from '../hooks/useNotificationSocket';
+import { Toaster } from 'sonner';
 
 export function Layout() {
   const { user, logout } = useAuthStore();
+  const { currentWorkspace, loadWorkspaces } = useWorkspaceStore();
   const navigate = useNavigate();
   const { id: currentProjectId } = useParams();
   const [projects, setProjects] = useState<any[]>([]);
@@ -15,13 +21,30 @@ export function Layout() {
   const [isLoading, setIsLoading] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  // Connect to notification WebSocket
+  useNotificationSocket();
+
   useEffect(() => {
-    loadProjects();
+    loadWorkspaces();
   }, []);
 
+  useEffect(() => {
+    if (currentWorkspace) {
+      loadProjects();
+    }
+  }, [currentWorkspace?.id]);
+
+  // Reload projects if navigating to a project not in the list (e.g., after creating)
+  useEffect(() => {
+    if (currentProjectId && projects.length > 0 && !projects.find(p => p.id === currentProjectId)) {
+      loadProjects();
+    }
+  }, [currentProjectId]);
+
   const loadProjects = async () => {
+    if (!currentWorkspace) return;
     try {
-      const data = await apiService.getProjects();
+      const data = await apiService.getProjects(currentWorkspace.id);
       setProjects(data);
     } catch (error) {
       console.error('Failed to load projects:', error);
@@ -52,6 +75,9 @@ export function Layout() {
               <Link to="/projects" className="flex items-center">
                 <span className="text-2xl font-bold text-primary-600">Kubidu</span>
               </Link>
+
+              {/* Workspace Switcher */}
+              <WorkspaceSwitcher />
 
               {/* Project Selector Dropdown */}
               <div className="relative">
@@ -132,6 +158,9 @@ export function Layout() {
                   </button>
                 </>
               )}
+
+              {/* Notification Bell */}
+              <NotificationBell />
 
               {/* User dropdown */}
               <div className="relative" ref={userMenuRef}>
@@ -239,6 +268,21 @@ export function Layout() {
           }}
         />
       )}
+
+      {/* Toast notifications */}
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        offset="80px"
+        gap={8}
+        visibleToasts={5}
+        toastOptions={{
+          style: {
+            marginTop: '8px',
+          },
+        }}
+      />
     </div>
   );
 }

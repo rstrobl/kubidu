@@ -11,6 +11,10 @@ import { NewProject } from './pages/NewProject';
 import { GitHubCallback } from './pages/GitHubCallback';
 import { Settings } from './pages/Settings';
 import { ProjectLogs } from './pages/ProjectLogs';
+import { NewWorkspace } from './pages/NewWorkspace';
+import { WorkspaceSettings } from './pages/WorkspaceSettings';
+import { NotificationSettings } from './pages/NotificationSettings';
+import { Notifications } from './pages/Notifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,7 +88,11 @@ function App() {
             <Route path="projects/new" element={<NewProject />} />
             <Route path="projects/:id/logs" element={<ProjectLogs />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
+            <Route path="workspaces/new" element={<NewWorkspace />} />
+            <Route path="workspaces/:id/settings" element={<WorkspaceSettings />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="settings/notifications" element={<NotificationSettings />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
 
           <Route path="*" element={<DefaultRedirect />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { useWorkspaceStore } from '../stores/workspace.store';
 
 export function NewProject() {
   const [name, setName] = useState('');
@@ -8,14 +9,21 @@ export function NewProject() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspaceStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!currentWorkspace) {
+      setError('No workspace selected');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const project = await apiService.createProject({
+      const project = await apiService.createProject(currentWorkspace.id, {
         name,
         description: description || undefined,
       });
