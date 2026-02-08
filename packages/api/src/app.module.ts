@@ -22,6 +22,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { EmailModule } from './modules/email/email.module';
 import { AuditLoggerMiddleware } from './middleware/audit-logger.middleware';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { SharedServicesModule } from './services/shared-services.module';
 
 @Module({
   imports: [
@@ -57,6 +58,9 @@ import { RequestIdMiddleware } from './middleware/request-id.middleware';
 
     // Database
     DatabaseModule,
+
+    // Shared services (authorization, encryption, etc.)
+    SharedServicesModule,
 
     // Feature modules
     AuthModule,

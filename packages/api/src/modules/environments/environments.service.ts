@@ -10,6 +10,7 @@ import {
 import { EnvironmentVariable, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { EncryptionService } from '../../services/encryption.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import { SetEnvironmentVariableDto } from './dto/set-environment-variable.dto';
 import { CreateEnvVarReferenceDto } from './dto/create-env-var-reference.dto';
 import { DeploymentsService } from '../deployments/deployments.service';
@@ -21,28 +22,10 @@ export class EnvironmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryptionService: EncryptionService,
+    private readonly authorizationService: AuthorizationService,
     @Inject(forwardRef(() => DeploymentsService))
     private readonly deploymentsService: DeploymentsService,
   ) {}
-
-  /**
-   * Check if user has access to a workspace with required roles
-   */
-  private async checkWorkspaceAccess(
-    userId: string,
-    workspaceId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<void> {
-    const member = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    });
-
-    if (!member || !allowedRoles.includes(member.role)) {
-      throw new ForbiddenException('You do not have permission to access this resource');
-    }
-  }
 
   async setVariable(
     userId: string,
@@ -71,7 +54,7 @@ export class EnvironmentsService {
       if (!service) {
         throw new NotFoundException('Service not found');
       }
-      await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+      await this.authorizationService.checkWorkspaceAccess(userId, service.project.workspaceId, [
         WorkspaceRole.ADMIN,
         WorkspaceRole.MEMBER,
       ]);
@@ -85,7 +68,7 @@ export class EnvironmentsService {
       if (!deployment) {
         throw new NotFoundException('Deployment not found');
       }
-      await this.checkWorkspaceAccess(userId, deployment.service.project.workspaceId, [
+      await this.authorizationService.checkWorkspaceAccess(userId, deployment.service.project.workspaceId, [
         WorkspaceRole.ADMIN,
         WorkspaceRole.MEMBER,
       ]);
@@ -291,7 +274,7 @@ export class EnvironmentsService {
       throw new ForbiddenException('You do not have permission to delete this variable');
     }
 
-    await this.checkWorkspaceAccess(userId, workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -346,7 +329,7 @@ export class EnvironmentsService {
       throw new NotFoundException('Project not found');
     }
 
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -427,7 +410,7 @@ export class EnvironmentsService {
     if (!consumer) {
       throw new NotFoundException('Service not found');
     }
-    await this.checkWorkspaceAccess(userId, consumer.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, consumer.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -495,7 +478,7 @@ export class EnvironmentsService {
       throw new NotFoundException('Service not found');
     }
 
-    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -538,7 +521,7 @@ export class EnvironmentsService {
       throw new NotFoundException('Reference not found');
     }
 
-    await this.checkWorkspaceAccess(userId, reference.service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, reference.service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);

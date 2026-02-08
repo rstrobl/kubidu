@@ -1,13 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import { DeployTemplateDto } from './dto/deploy-template.dto';
 import { Template, TemplateDeployment, WorkspaceRole } from '@prisma/client';
 import {
@@ -22,48 +22,9 @@ export class TemplatesService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService,
     @InjectQueue('template') private readonly templateQueue: Queue,
   ) {}
-
-  /**
-   * Check if user has required access to workspace via project.
-   * Returns workspaceId for use in queue jobs.
-   */
-  private async checkWorkspaceAccessViaProject(
-    userId: string,
-    projectId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<{ workspaceId: string }> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      select: { workspaceId: true },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    const membership = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: {
-          userId,
-          workspaceId: project.workspaceId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this workspace');
-    }
-
-    if (!allowedRoles.includes(membership.role)) {
-      throw new ForbiddenException(
-        `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
-      );
-    }
-
-    return { workspaceId: project.workspaceId };
-  }
 
   async findAll(): Promise<Template[]> {
     return this.prisma.template.findMany({
@@ -109,7 +70,7 @@ export class TemplatesService {
     dto: DeployTemplateDto,
   ): Promise<TemplateDeployment> {
     // Verify workspace access - any member can deploy templates
-    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+    const { workspaceId } = await this.authorizationService.checkWorkspaceAccessViaProject(userId, projectId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -191,7 +152,7 @@ export class TemplatesService {
     }
 
     // Check workspace access - any member can view template deployments
-    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+    await this.authorizationService.checkWorkspaceAccessViaProject(userId, projectId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -205,7 +166,7 @@ export class TemplatesService {
     projectId: string,
   ): Promise<TemplateDeployment[]> {
     // Check workspace access - any member can view template deployments
-    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+    await this.authorizationService.checkWorkspaceAccessViaProject(userId, projectId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,

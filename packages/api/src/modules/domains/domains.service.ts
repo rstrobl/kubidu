@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
   Logger,
   Inject,
@@ -9,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Domain, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import { CreateDomainDto } from './dto/create-domain.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
@@ -24,28 +24,10 @@ export class DomainsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService,
     @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
   ) {}
-
-  /**
-   * Check if user has access to a workspace with required roles
-   */
-  private async checkWorkspaceAccess(
-    userId: string,
-    workspaceId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<void> {
-    const member = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    });
-
-    if (!member || !allowedRoles.includes(member.role)) {
-      throw new ForbiddenException('You do not have permission to access this resource');
-    }
-  }
 
   async create(
     userId: string,
@@ -62,7 +44,7 @@ export class DomainsService {
       throw new NotFoundException('Service not found');
     }
 
-    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -103,7 +85,7 @@ export class DomainsService {
       throw new NotFoundException('Service not found');
     }
 
-    await this.checkWorkspaceAccess(userId, service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -125,7 +107,7 @@ export class DomainsService {
       throw new NotFoundException('Domain not found');
     }
 
-    await this.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -249,7 +231,7 @@ export class DomainsService {
       throw new NotFoundException('Domain not found');
     }
 
-    await this.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, domain.service.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);

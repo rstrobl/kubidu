@@ -1,51 +1,27 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import { Volume, WorkspaceRole } from '@prisma/client';
 
 @Injectable()
 export class VolumesService {
   private readonly logger = new Logger(VolumesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  /**
-   * Check if user has access to a workspace with required roles
-   */
-  private async checkWorkspaceAccess(
-    userId: string,
-    workspaceId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<void> {
-    const member = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    });
-
-    if (!member || !allowedRoles.includes(member.role)) {
-      throw new ForbiddenException('You do not have permission to access this resource');
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService,
+  ) {}
 
   /**
    * Get all volumes for a project
    */
   async findAll(userId: string, projectId: string): Promise<Volume[]> {
     // Verify project belongs to workspace user has access to
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccessViaProject(userId, projectId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -105,7 +81,7 @@ export class VolumesService {
       throw new NotFoundException('Volume not found in this project');
     }
 
-    await this.checkWorkspaceAccess(userId, volume.project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, volume.project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,

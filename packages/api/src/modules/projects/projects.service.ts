@@ -2,10 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Project, WorkspaceRole } from '@prisma/client';
@@ -15,36 +15,10 @@ import { slugify } from '@kubidu/shared';
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  /**
-   * Check if user has required access to workspace.
-   * Throws ForbiddenException if not.
-   */
-  private async checkWorkspaceAccess(
-    userId: string,
-    workspaceId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<void> {
-    const membership = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: {
-          userId,
-          workspaceId,
-        },
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this workspace');
-    }
-
-    if (!allowedRoles.includes(membership.role)) {
-      throw new ForbiddenException(
-        `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
-      );
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService,
+  ) {}
 
   async create(
     userId: string,
@@ -52,7 +26,7 @@ export class ProjectsService {
     createProjectDto: CreateProjectDto,
   ): Promise<Project> {
     // Check workspace access - ADMIN and MEMBER can create projects
-    await this.checkWorkspaceAccess(userId, workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -89,7 +63,7 @@ export class ProjectsService {
 
   async findAll(userId: string, workspaceId: string): Promise<Project[]> {
     // Check workspace access - any member can view projects
-    await this.checkWorkspaceAccess(userId, workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -151,7 +125,7 @@ export class ProjectsService {
     }
 
     // Check workspace membership - any member can view projects
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
       WorkspaceRole.DEPLOYER,
@@ -174,7 +148,7 @@ export class ProjectsService {
     }
 
     // Check workspace access - ADMIN and MEMBER can update projects
-    await this.checkWorkspaceAccess(userId, existingProject.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, existingProject.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);
@@ -214,7 +188,7 @@ export class ProjectsService {
     }
 
     // Check workspace access - ADMIN and MEMBER can delete projects
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
+    await this.authorizationService.checkWorkspaceAccess(userId, project.workspaceId, [
       WorkspaceRole.ADMIN,
       WorkspaceRole.MEMBER,
     ]);

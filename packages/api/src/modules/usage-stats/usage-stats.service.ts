@@ -1,9 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { WorkspaceRole } from '@prisma/client';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthorizationService } from '../../services/authorization.service';
 import {
   parseK8sCpu,
   parseK8sMemory,
@@ -20,6 +21,7 @@ export class UsageStatsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly authorizationService: AuthorizationService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
@@ -28,43 +30,20 @@ export class UsageStatsService {
       'http://deploy-controller:3002';
   }
 
-  /**
-   * Check if user has access to a workspace with required roles
-   */
-  private async checkWorkspaceAccess(
-    userId: string,
-    workspaceId: string,
-    allowedRoles: WorkspaceRole[],
-  ): Promise<void> {
-    const member = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
-    });
-
-    if (!member || !allowedRoles.includes(member.role)) {
-      throw new ForbiddenException('You do not have permission to access this resource');
-    }
-  }
-
   async getAllocationStats(
     userId: string,
     projectId: string,
   ): Promise<ProjectAllocationStats> {
     // Verify project belongs to workspace user has access to
+    const { workspaceId } = await this.authorizationService.checkWorkspaceAccessViaProject(
+      userId,
+      projectId,
+      [WorkspaceRole.ADMIN, WorkspaceRole.MEMBER, WorkspaceRole.DEPLOYER],
+    );
+
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
     });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
-      WorkspaceRole.ADMIN,
-      WorkspaceRole.MEMBER,
-      WorkspaceRole.DEPLOYER,
-    ]);
 
     // Get services for this project
     const services = await this.prisma.service.findMany({
@@ -163,21 +142,13 @@ export class UsageStatsService {
     projectId: string,
   ): Promise<ProjectLiveMetrics | null> {
     // Verify project belongs to workspace user has access to
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
+    const { workspaceId } = await this.authorizationService.checkWorkspaceAccessViaProject(
+      userId,
+      projectId,
+      [WorkspaceRole.ADMIN, WorkspaceRole.MEMBER, WorkspaceRole.DEPLOYER],
+    );
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    await this.checkWorkspaceAccess(userId, project.workspaceId, [
-      WorkspaceRole.ADMIN,
-      WorkspaceRole.MEMBER,
-      WorkspaceRole.DEPLOYER,
-    ]);
-
-    const namespace = `kubidu-${project.workspaceId.substring(0, 8)}`;
+    const namespace = `kubidu-${workspaceId.substring(0, 8)}`;
 
     try {
       const url = `${this.deployControllerUrl}/metrics/${namespace}/project/${projectId}`;
