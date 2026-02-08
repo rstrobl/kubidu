@@ -22,6 +22,8 @@ import { Impact } from './pages/Impact';
 import { Activity } from './pages/Activity';
 import { Insights } from './pages/Insights';
 import { Dependencies } from './pages/Dependencies';
+import { StatusPage } from './pages/StatusPage';
+import { Billing } from './pages/Billing';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +154,9 @@ function App() {
           {/* OAuth callback (unauthenticated - creates session) */}
           <Route path="/auth/callback" element={<AuthCallback />} />
 
+          {/* Public Status Page (no auth required) */}
+          <Route path="/status/:workspaceSlug/:projectSlug" element={<StatusPage />} />
+
           {/* Protected routes with layout */}
           <Route
             element={
@@ -175,6 +180,7 @@ function App() {
             <Route path="impact" element={<Impact />} />
             <Route path="activity" element={<Activity />} />
             <Route path="insights" element={<Insights />} />
+            <Route path="billing" element={<Billing />} />
           </Route>
 
           {/* Catch-all redirect */}

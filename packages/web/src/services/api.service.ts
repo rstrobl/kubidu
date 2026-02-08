@@ -625,6 +625,86 @@ class ApiService {
     const response = await this.client.get(`/projects/${projectId}/dependencies`);
     return response.data;
   }
+
+  // Favorites endpoints
+  async getFavorites() {
+    const response = await this.client.get('/favorites');
+    return response.data;
+  }
+
+  async addFavorite(projectId: string) {
+    const response = await this.client.post(`/favorites/${projectId}`);
+    return response.data;
+  }
+
+  async removeFavorite(projectId: string) {
+    const response = await this.client.delete(`/favorites/${projectId}`);
+    return response.data;
+  }
+
+  async isFavorite(projectId: string) {
+    const response = await this.client.get(`/favorites/${projectId}/check`);
+    return response.data;
+  }
+
+  // Global search endpoints
+  async search(query: string, types?: string[], limit?: number) {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    if (types?.length) params.append('types', types.join(','));
+    if (limit) params.append('limit', limit.toString());
+    const response = await this.client.get(`/search?${params.toString()}`);
+    return response.data;
+  }
+
+  async getSearchSuggestions(query: string) {
+    const response = await this.client.get(`/search/suggestions?q=${encodeURIComponent(query)}`);
+    return response.data;
+  }
+
+  // Cost calculator endpoints
+  async getWorkspaceCost(workspaceId: string) {
+    const response = await this.client.get(`/workspaces/${workspaceId}/cost`);
+    return response.data;
+  }
+
+  async getProjectCost(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/cost`);
+    return response.data;
+  }
+
+  // Status page (public - no auth)
+  async getPublicStatus(workspaceSlug: string, projectSlug: string) {
+    const response = await axios.get(`${API_URL}/api/status/${workspaceSlug}/${projectSlug}`);
+    return response.data;
+  }
+
+  async subscribeToStatus(workspaceSlug: string, projectSlug: string, email: string) {
+    const response = await axios.post(
+      `${API_URL}/api/status/${workspaceSlug}/${projectSlug}/subscribe`,
+      { email }
+    );
+    return response.data;
+  }
+
+  // Incidents (authenticated)
+  async createIncident(projectId: string, data: {
+    title: string;
+    message: string;
+    severity: 'MINOR' | 'MAJOR' | 'CRITICAL';
+    affectedServiceIds: string[];
+  }) {
+    const response = await this.client.post(`/projects/${projectId}/incidents`, data);
+    return response.data;
+  }
+
+  async updateIncident(projectId: string, incidentId: string, data: {
+    status: 'INVESTIGATING' | 'IDENTIFIED' | 'MONITORING' | 'RESOLVED';
+    message?: string;
+  }) {
+    const response = await this.client.patch(`/projects/${projectId}/incidents/${incidentId}`, data);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

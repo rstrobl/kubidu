@@ -22,6 +22,10 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EmailModule } from './modules/email/email.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
+import { StatusPageModule } from './modules/status-page/status-page.module';
+import { CostModule } from './modules/cost/cost.module';
+import { SearchModule } from './modules/search/search.module';
 import { AuditLoggerMiddleware } from './middleware/audit-logger.middleware';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { SharedServicesModule } from './services/shared-services.module';
@@ -83,6 +87,10 @@ import { SharedServicesModule } from './services/shared-services.module';
     NotificationsModule,
     EmailModule,
     WebhooksModule,
+    FavoritesModule,
+    StatusPageModule,
+    CostModule,
+    SearchModule,
   ],
 })
 export class AppModule implements NestModule {

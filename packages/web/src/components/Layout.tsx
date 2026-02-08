@@ -12,6 +12,8 @@ import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { DarkModeToggle } from './DarkModeToggle';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { Toaster } from 'sonner';
+import { FavoritesList } from './FavoriteButton';
+import { GlobalSearch } from './GlobalSearch';
 
 export function Layout() {
   const { user, logout } = useAuthStore();
@@ -24,6 +26,8 @@ export function Layout() {
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Connect to notification WebSocket
@@ -173,6 +177,30 @@ export function Layout() {
             </div>
 
             <div className="flex items-center space-x-2">
+              {/* Favorites Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFavorites(!showFavorites)}
+                  className="p-2 rounded-lg text-gray-500 hover:text-yellow-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  title="Favorites"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+                {showFavorites && (
+                  <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 dark:ring-white/10 z-50 overflow-hidden animate-scale-in">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">⭐ Favorites</h3>
+                    </div>
+                    <FavoritesList onSelect={(projectId) => {
+                      setShowFavorites(false);
+                      navigate(`/projects/${projectId}`);
+                    }} />
+                  </div>
+                )}
+              </div>
+
               {/* Command Palette */}
               <CommandPalette />
 
@@ -298,6 +326,14 @@ export function Layout() {
                         <span className="w-4 h-4 text-center">🌱</span>
                         Environmental Impact
                       </Link>
+                      <Link
+                        to="/billing"
+                        onClick={() => setShowUserMenu(false)}
+                        className="dropdown-item"
+                      >
+                        <span className="w-4 h-4 text-center">💳</span>
+                        Billing & Plans
+                      </Link>
                     </div>
 
                     {/* Footer with region info */}
@@ -336,15 +372,22 @@ export function Layout() {
       </nav>
 
       {/* Close dropdowns when clicking outside */}
-      {(showProjectDropdown || showUserMenu) && (
+      {(showProjectDropdown || showUserMenu || showFavorites) && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => {
             setShowProjectDropdown(false);
             setShowUserMenu(false);
+            setShowFavorites(false);
           }}
         />
       )}
+      
+      {/* Global Search Modal */}
+      <GlobalSearch 
+        isOpen={showGlobalSearch} 
+        onClose={() => setShowGlobalSearch(false)} 
+      />
 
       {/* Main content with top padding for fixed nav */}
       <main className="pt-16 min-h-screen">

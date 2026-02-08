@@ -827,3 +827,150 @@ model WebhookDelivery {
   @@index([createdAt])
   @@map("webhook_deliveries")
 }
+
+// Favorite projects (user-specific)
+model FavoriteProject {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  projectId   String   @map("project_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("favorite_projects")
+}
+
+// Status page incidents
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum IncidentSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+model StatusPageIncident {
+  id          String           @id @default(uuid())
+  projectId   String           @map("project_id")
+  
+  title       String
+  message     String
+  status      IncidentStatus   @default(INVESTIGATING)
+  severity    IncidentSeverity @default(MINOR)
+  
+  affectedServiceIds String[]  @map("affected_service_ids")
+  
+  resolvedAt  DateTime?        @map("resolved_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  
+  updates     StatusPageUpdate[]
+  
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("status_page_incidents")
+}
+
+model StatusPageUpdate {
+  id          String   @id @default(uuid())
+  incidentId  String   @map("incident_id")
+  
+  message     String
+  status      IncidentStatus
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  incident    StatusPageIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  
+  @@index([incidentId])
+  @@map("status_page_updates")
+}
+
+// Status page subscribers
+model StatusPageSubscriber {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  
+  email       String
+  confirmed   Boolean  @default(false)
+  token       String   @unique
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  confirmedAt DateTime? @map("confirmed_at")
+  
+  @@unique([projectId, email])
+  @@index([projectId])
+  @@index([token])
+  @@map("status_page_subscribers")
+}
+
+// Resource alerts
+enum AlertType {
+  CPU_HIGH
+  MEMORY_HIGH
+  DISK_HIGH
+  SERVICE_DOWN
+  BUILD_FAILED
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model ResourceAlert {
+  id          String      @id @default(uuid())
+  projectId   String      @map("project_id")
+  serviceId   String?     @map("service_id")
+  
+  type        AlertType
+  status      AlertStatus @default(ACTIVE)
+  
+  threshold   Float       // e.g., 80 for 80%
+  currentValue Float      @map("current_value")
+  message     String
+  
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  acknowledgedBy String?   @map("acknowledged_by")
+  resolvedAt    DateTime?  @map("resolved_at")
+  
+  createdAt   DateTime    @default(now()) @map("created_at")
+  
+  @@index([projectId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("resource_alerts")
+}
+
+// Alert rules
+model AlertRule {
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  
+  name        String
+  type        AlertType
+  threshold   Float     // e.g., 80 for 80%
+  
+  enabled     Boolean   @default(true)
+  
+  // Notification channels
+  notifyEmail    Boolean @default(true) @map("notify_email")
+  notifyWebhook  Boolean @default(false) @map("notify_webhook")
+  webhookUrl     String? @map("webhook_url")
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@unique([projectId, type])
+  @@index([projectId])
+  @@map("alert_rules")
+}
