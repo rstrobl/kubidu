@@ -705,6 +705,103 @@ class ApiService {
     const response = await this.client.patch(`/projects/${projectId}/incidents/${incidentId}`, data);
     return response.data;
   }
+
+  // Two-Factor Authentication endpoints
+  async enable2FA() {
+    const response = await this.client.post('/auth/2fa/enable');
+    return response.data;
+  }
+
+  async verify2FA(token: string) {
+    const response = await this.client.post('/auth/2fa/verify', { token });
+    return response.data;
+  }
+
+  async disable2FA() {
+    const response = await this.client.post('/auth/2fa/disable');
+    return response.data;
+  }
+
+  // Workspace audit logs
+  async getWorkspaceAuditLogs(workspaceId: string, options: {
+    limit?: number;
+    offset?: number;
+    action?: string;
+    resource?: string;
+    userId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  } = {}) {
+    const params = new URLSearchParams();
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+    if (options.action) params.append('action', options.action);
+    if (options.resource) params.append('resource', options.resource);
+    if (options.userId) params.append('userId', options.userId);
+    if (options.startDate) params.append('startDate', options.startDate.toISOString());
+    if (options.endDate) params.append('endDate', options.endDate.toISOString());
+    const response = await this.client.get(`/workspaces/${workspaceId}/audit?${params.toString()}`);
+    return response.data;
+  }
+
+  // Deployment rollback
+  async rollbackDeployment(projectId: string, serviceId: string, targetDeploymentId: string) {
+    const response = await this.client.post(
+      `/projects/${projectId}/services/${serviceId}/rollback`,
+      { targetDeploymentId }
+    );
+    return response.data;
+  }
+
+  // Get deployment diff
+  async getDeploymentDiff(deploymentId1: string, deploymentId2: string) {
+    const response = await this.client.get(
+      `/deployments/diff?from=${deploymentId1}&to=${deploymentId2}`
+    );
+    return response.data;
+  }
+
+  // Project environments
+  async getProjectEnvironments(projectId: string) {
+    const response = await this.client.get(`/projects/${projectId}/environments`);
+    return response.data;
+  }
+
+  // Transfer project ownership
+  async transferProjectOwnership(projectId: string, newOwnerId: string) {
+    const response = await this.client.post(`/projects/${projectId}/transfer`, { newOwnerId });
+    return response.data;
+  }
+
+  // Team activity (per user)
+  async getTeamActivity(workspaceId: string, userId?: string) {
+    const params = userId ? `?userId=${userId}` : '';
+    const response = await this.client.get(`/workspaces/${workspaceId}/team-activity${params}`);
+    return response.data;
+  }
+
+  // Service resource limits
+  async updateServiceResources(projectId: string, serviceId: string, data: {
+    cpuLimit?: string;
+    memoryLimit?: string;
+    cpuRequest?: string;
+    memoryRequest?: string;
+    replicas?: number;
+  }) {
+    const response = await this.client.patch(
+      `/projects/${projectId}/services/${serviceId}/resources`,
+      data
+    );
+    return response.data;
+  }
+
+  // Get service live metrics
+  async getServiceMetrics(projectId: string, serviceId: string) {
+    const response = await this.client.get(
+      `/projects/${projectId}/services/${serviceId}/metrics`
+    );
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

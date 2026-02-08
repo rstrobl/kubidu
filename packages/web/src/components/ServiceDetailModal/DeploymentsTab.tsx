@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Deployment } from './types';
 import { formatDistanceToNow } from '../../utils/date';
 import { LogViewer } from './LogViewer';
+import { DeploymentRollback } from '../DeploymentRollback';
 
 // Helper wrapper to handle string dates
 function formatRelativeTime(date: string | Date): string {
@@ -18,6 +20,9 @@ interface DeploymentsTabProps {
   onViewLogs: (deploymentId: string, defaultType: 'runtime' | 'build') => void;
   onChangeLogType: (type: 'runtime' | 'build', deploymentId: string) => void;
   onRetryDeployment: (deploymentId: string) => void;
+  serviceId?: string;
+  projectId?: string;
+  onDeploymentsChange?: () => void;
 }
 
 export function DeploymentsTab({
@@ -31,12 +36,58 @@ export function DeploymentsTab({
   onViewLogs,
   onChangeLogType,
   onRetryDeployment,
+  serviceId,
+  projectId,
+  onDeploymentsChange,
 }: DeploymentsTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'history' | 'rollback'>('history');
+  
+  const activeDeployment = deployments.find(d => d.isActive) || null;
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Deployments</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Deployments</h3>
+        
+        {/* Sub-tabs */}
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => setActiveSubTab('history')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              activeSubTab === 'history'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            History
+          </button>
+          <button
+            onClick={() => setActiveSubTab('rollback')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              activeSubTab === 'rollback'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            Rollback
+          </button>
+        </div>
       </div>
+      
+      {/* Rollback Tab */}
+      {activeSubTab === 'rollback' && serviceId && projectId && (
+        <DeploymentRollback
+          serviceId={serviceId}
+          projectId={projectId}
+          currentDeployment={activeDeployment}
+          deployments={deployments}
+          onRollback={() => onDeploymentsChange?.()}
+        />
+      )}
+      
+      {/* History Tab */}
+      {activeSubTab === 'history' && (
+        <>
       {deployments.length === 0 ? (
         <p className="text-sm text-gray-500">No deployments yet</p>
       ) : (
@@ -161,6 +212,8 @@ export function DeploymentsTab({
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

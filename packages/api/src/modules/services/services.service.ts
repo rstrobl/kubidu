@@ -37,6 +37,7 @@ export class ServicesService {
     private readonly notificationsService: NotificationsService,
     private readonly gitHubAppService: GitHubAppService,
     @InjectQueue('build') private readonly buildQueue: Queue,
+    @InjectQueue('deploy') private readonly deployQueue: Queue,
   ) {}
 
   /**
@@ -718,5 +719,125 @@ export class ServicesService {
     }
 
     this.logger.log(`System environment variables created/updated for service ${serviceId}`);
+  }
+
+  /**
+   * Rollback a service to a previous deployment
+   */
+  async rollback(
+    userId: string,
+    projectId: string,
+    serviceId: string,
+    targetDeploymentId: string,
+  ): Promise<any> {
+    // Verify workspace access - ADMIN, MEMBER, and DEPLOYER can rollback
+    const { workspaceId } = await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
+
+    // Get the service
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!service || service.projectId !== projectId) {
+      throw new NotFoundException('Service not found');
+    }
+
+    // Get the target deployment
+    const targetDeployment = await this.prisma.deployment.findUnique({
+      where: { id: targetDeploymentId },
+    });
+
+    if (!targetDeployment || targetDeployment.serviceId !== serviceId) {
+      throw new NotFoundException('Target deployment not found');
+    }
+
+    // Create a new deployment based on the target deployment
+    const newDeployment = await this.prisma.deployment.create({
+      data: {
+        serviceId,
+        name: `${service.name.toLowerCase()}-rollback-${Date.now()}`,
+        status: 'PENDING',
+        imageUrl: targetDeployment.imageUrl,
+        imageTag: targetDeployment.imageTag,
+        gitCommitSha: targetDeployment.gitCommitSha,
+        gitCommitMessage: `Rollback to ${targetDeployment.gitCommitSha?.substring(0, 7) || targetDeployment.name}`,
+        gitAuthor: targetDeployment.gitAuthor,
+        port: targetDeployment.port,
+        replicas: targetDeployment.replicas,
+        cpuLimit: targetDeployment.cpuLimit,
+        memoryLimit: targetDeployment.memoryLimit,
+        cpuRequest: targetDeployment.cpuRequest,
+        memoryRequest: targetDeployment.memoryRequest,
+        healthCheckPath: targetDeployment.healthCheckPath,
+      },
+    });
+
+    this.logger.log(`Rollback deployment created: ${newDeployment.id} from ${targetDeploymentId}`);
+
+    // Enqueue deployment job
+    await this.deployQueue.add({
+      deploymentId: newDeployment.id,
+      projectId,
+      workspaceId,
+    });
+
+    return {
+      message: 'Rollback initiated successfully',
+      deployment: newDeployment,
+      rolledBackFrom: targetDeploymentId,
+    };
+  }
+
+  /**
+   * Get live metrics for a service
+   */
+  async getMetrics(
+    userId: string,
+    projectId: string,
+    serviceId: string,
+  ): Promise<any> {
+    // Verify workspace access
+    await this.checkWorkspaceAccessViaProject(userId, projectId, [
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.MEMBER,
+      WorkspaceRole.DEPLOYER,
+    ]);
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      include: {
+        deployments: {
+          where: { status: 'RUNNING' },
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!service || service.projectId !== projectId) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const activeDeployment = service.deployments[0];
+
+    // Return mock metrics (in production, these would come from Kubernetes metrics-server)
+    return {
+      serviceId,
+      serviceName: service.name,
+      activeDeploymentId: activeDeployment?.id,
+      cpuUsage: Math.floor(Math.random() * 400) + 100, // millicores
+      memoryUsage: Math.floor(Math.random() * 300) + 100, // MB
+      cpuLimit: service.defaultCpuLimit,
+      memoryLimit: service.defaultMemoryLimit,
+      replicas: service.defaultReplicas,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

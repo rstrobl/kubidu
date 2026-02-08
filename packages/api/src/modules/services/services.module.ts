@@ -14,6 +14,7 @@ import { DockerInspectorService } from './docker-inspector.service';
     forwardRef(() => NotificationsModule),
     GitHubModule,
     BullModule.registerQueue({ name: 'build' }),
+    BullModule.registerQueue({ name: 'deploy' }),
   ],
   controllers: [ServicesController],
   providers: [ServicesService, EncryptionService, DockerInspectorService],

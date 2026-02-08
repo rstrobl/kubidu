@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 import { apiService } from '../services/api.service';
+import { TwoFactorSettings } from '../components/TwoFactorSettings';
 
 export function Settings() {
   const { user, loadUser } = useAuthStore();
@@ -177,22 +178,7 @@ export function Settings() {
               )}
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
-              <div>
-                <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-                <p className="text-sm text-gray-500">Add an extra layer of security</p>
-              </div>
-              {user?.twoFactorEnabled ? (
-                <span className="badge badge-success flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Enabled
-                </span>
-              ) : (
-                <button className="btn btn-sm btn-secondary">Enable</button>
-              )}
-            </div>
+            <TwoFactorSettings onUpdate={loadUser} />
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
               <div>

@@ -6,11 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -176,6 +179,56 @@ export class WorkspacesController {
     @Param('invitationId') invitationId: string,
   ) {
     await this.workspacesService.cancelInvitation(req.user.id, workspaceId, invitationId);
+  }
+
+  // ===============================
+  // Audit Logs
+  // ===============================
+
+  @Get(':id/audit')
+  @UseGuards(JwtAuthGuard, WorkspaceRoleGuard)
+  @WorkspaceRoles(WorkspaceRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get workspace audit logs (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Audit logs retrieved' })
+  async getAuditLogs(
+    @Req() req,
+    @Param('id') workspaceId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('action') action?: string,
+    @Query('resource') resource?: string,
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.workspacesService.getAuditLogs(workspaceId, {
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+      action,
+      resource,
+      userId,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
+  // ===============================
+  // Team Activity
+  // ===============================
+
+  @Get(':id/team-activity')
+  @UseGuards(JwtAuthGuard, WorkspaceRoleGuard)
+  @WorkspaceRoles(WorkspaceRole.ADMIN, WorkspaceRole.MEMBER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get team activity per user' })
+  @ApiResponse({ status: 200, description: 'Team activity retrieved' })
+  async getTeamActivity(
+    @Req() req,
+    @Param('id') workspaceId: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.workspacesService.getTeamActivity(workspaceId, userId);
   }
 }
 

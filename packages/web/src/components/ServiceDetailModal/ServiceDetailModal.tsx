@@ -625,6 +625,9 @@ export function ServiceDetailModal({
                     onViewLogs={handleViewLogs}
                     onChangeLogType={handleChangeLogType}
                     onRetryDeployment={handleRetryDeployment}
+                    serviceId={serviceId}
+                    projectId={projectId}
+                    onDeploymentsChange={loadDeployments}
                   />
                 )}
 

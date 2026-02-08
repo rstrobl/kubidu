@@ -334,6 +334,14 @@ export function Layout() {
                         <span className="w-4 h-4 text-center">💳</span>
                         Billing & Plans
                       </Link>
+                      <Link
+                        to="/audit"
+                        onClick={() => setShowUserMenu(false)}
+                        className="dropdown-item"
+                      >
+                        <span className="w-4 h-4 text-center">📋</span>
+                        Audit Logs
+                      </Link>
                     </div>
 
                     {/* Footer with region info */}

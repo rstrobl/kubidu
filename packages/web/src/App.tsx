@@ -24,6 +24,7 @@ import { Insights } from './pages/Insights';
 import { Dependencies } from './pages/Dependencies';
 import { StatusPage } from './pages/StatusPage';
 import { Billing } from './pages/Billing';
+import { AuditLogs } from './pages/AuditLogs';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -181,6 +182,7 @@ function App() {
             <Route path="activity" element={<Activity />} />
             <Route path="insights" element={<Insights />} />
             <Route path="billing" element={<Billing />} />
+            <Route path="audit" element={<AuditLogs />} />
           </Route>
 
           {/* Catch-all redirect */}

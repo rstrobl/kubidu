@@ -32,12 +32,18 @@ export interface Deployment {
   id: string;
   name: string;
   status: string;
-  imageUrl?: string;
-  imageTag?: string;
-  gitCommitSha?: string;
-  gitCommitMessage?: string;
+  imageUrl?: string | null;
+  imageTag?: string | null;
+  gitCommitSha?: string | null;
+  gitCommitMessage?: string | null;
+  gitAuthor?: string | null;
   isActive?: boolean;
   createdAt: string;
+  deployedAt?: string | null;
+  port?: number | null;
+  replicas?: number | null;
+  cpuLimit?: string | null;
+  memoryLimit?: string | null;
   url?: string;
 }
 

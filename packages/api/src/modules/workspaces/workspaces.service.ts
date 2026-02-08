@@ -631,4 +631,159 @@ export class WorkspacesService {
 
     return membership?.role ?? null;
   }
+
+  // ===============================
+  // Audit Logs
+  // ===============================
+
+  /**
+   * Get audit logs for a workspace
+   */
+  async getAuditLogs(
+    workspaceId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      action?: string;
+      resource?: string;
+      userId?: string;
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ) {
+    const { limit = 50, offset = 0, action, resource, userId, startDate, endDate } = options;
+
+    // Get all project IDs in this workspace
+    const projects = await this.prisma.project.findMany({
+      where: { workspaceId },
+      select: { id: true },
+    });
+    const projectIds = projects.map(p => p.id);
+
+    // Build the where clause
+    const where: any = {
+      OR: [
+        { metadata: { path: ['workspaceId'], equals: workspaceId } },
+        { metadata: { path: ['projectId'], string_contains: projectIds.length > 0 ? projectIds[0] : 'none' } },
+      ],
+    };
+
+    if (action) {
+      where.action = { contains: action, mode: 'insensitive' };
+    }
+
+    if (resource) {
+      where.resource = { equals: resource };
+    }
+
+    if (userId) {
+      where.userId = userId;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    return { logs };
+  }
+
+  // ===============================
+  // Team Activity
+  // ===============================
+
+  /**
+   * Get team activity grouped by user
+   */
+  async getTeamActivity(workspaceId: string, userId?: string) {
+    const members = await this.prisma.workspaceMember.findMany({
+      where: { 
+        workspaceId,
+        ...(userId ? { userId } : {}),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+            lastLoginAt: true,
+          },
+        },
+      },
+    });
+
+    // Get activity stats for each member
+    const memberActivity = await Promise.all(
+      members.map(async (member) => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Get deployment count
+        const deployments = await this.prisma.deployment.count({
+          where: {
+            service: {
+              project: {
+                workspaceId,
+              },
+            },
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        });
+
+        // Get audit log actions count
+        const actions = await this.prisma.auditLog.count({
+          where: {
+            userId: member.userId,
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        });
+
+        // Get recent activity
+        const recentActivity = await this.prisma.auditLog.findMany({
+          where: {
+            userId: member.userId,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        });
+
+        return {
+          member: {
+            id: member.id,
+            userId: member.userId,
+            role: member.role,
+            joinedAt: member.createdAt,
+          },
+          user: member.user,
+          stats: {
+            deploymentsLast30Days: deployments,
+            actionsLast30Days: actions,
+          },
+          recentActivity,
+        };
+      }),
+    );
+
+    return { members: memberActivity };
+  }
 }

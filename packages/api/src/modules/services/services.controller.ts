@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -115,5 +116,58 @@ export class ServicesController {
     @Body() body: { serviceIds: string[] },
   ) {
     return this.servicesService.removeMany(req.user.id, projectId, body.serviceIds);
+  }
+
+  @Post(':id/rollback')
+  @ApiOperation({ summary: 'Rollback to a previous deployment' })
+  @ApiResponse({ status: 201, description: 'Rollback initiated successfully' })
+  @ApiResponse({ status: 404, description: 'Service or deployment not found' })
+  async rollback(
+    @Req() req,
+    @Param('projectId') projectId: string,
+    @Param('id') serviceId: string,
+    @Body() body: { targetDeploymentId: string },
+  ) {
+    return this.servicesService.rollback(
+      req.user.id,
+      projectId,
+      serviceId,
+      body.targetDeploymentId,
+    );
+  }
+
+  @Patch(':id/resources')
+  @ApiOperation({ summary: 'Update service resource limits' })
+  @ApiResponse({ status: 200, description: 'Resource limits updated' })
+  async updateResources(
+    @Req() req,
+    @Param('projectId') projectId: string,
+    @Param('id') serviceId: string,
+    @Body() body: {
+      cpuLimit?: string;
+      memoryLimit?: string;
+      cpuRequest?: string;
+      memoryRequest?: string;
+      replicas?: number;
+    },
+  ) {
+    return this.servicesService.update(req.user.id, projectId, serviceId, {
+      defaultCpuLimit: body.cpuLimit,
+      defaultMemoryLimit: body.memoryLimit,
+      defaultCpuRequest: body.cpuRequest,
+      defaultMemoryRequest: body.memoryRequest,
+      defaultReplicas: body.replicas,
+    });
+  }
+
+  @Get(':id/metrics')
+  @ApiOperation({ summary: 'Get service live metrics' })
+  @ApiResponse({ status: 200, description: 'Metrics retrieved' })
+  async getMetrics(
+    @Req() req,
+    @Param('projectId') projectId: string,
+    @Param('id') serviceId: string,
+  ) {
+    return this.servicesService.getMetrics(req.user.id, projectId, serviceId);
   }
 }

@@ -70,3 +70,34 @@ export function formatDateTime(date: Date): string {
     minute: '2-digit',
   });
 }
+
+/**
+ * Format a date using a format string (simplified date-fns compatible)
+ * Supported tokens: yyyy, MM, MMM, dd, HH, mm, ss
+ */
+export function format(date: Date, formatStr: string): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  
+  const tokens: Record<string, string> = {
+    'yyyy': date.getFullYear().toString(),
+    'MM': pad(date.getMonth() + 1),
+    'MMM': months[date.getMonth()],
+    'dd': pad(date.getDate()),
+    'd': date.getDate().toString(),
+    'HH': pad(date.getHours()),
+    'mm': pad(date.getMinutes()),
+    'ss': pad(date.getSeconds()),
+  };
+
+  let result = formatStr;
+  // Sort by length descending to match longer patterns first
+  Object.entries(tokens)
+    .sort((a, b) => b[0].length - a[0].length)
+    .forEach(([token, value]) => {
+      result = result.replace(new RegExp(token, 'g'), value);
+    });
+
+  return result;
+}

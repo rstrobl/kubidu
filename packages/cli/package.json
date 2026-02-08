@@ -1,0 +1,59 @@
+{
+  "name": "@kubidu/cli",
+  "version": "0.1.0",
+  "description": "Kubidu CLI - Deploy your apps with ease",
+  "main": "dist/index.js",
+  "bin": {
+    "kubidu": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/kubidu-bundle.js --external:keytar"
+  },
+  "keywords": [
+    "kubidu",
+    "cli",
+    "paas",
+    "deploy",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "Kubidu",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "conf": "^11.0.2",
+    "inquirer": "^8.2.6",
+    "open": "^8.4.2",
+    "ora": "^5.4.1",
+    "ws": "^8.14.2",
+    "chokidar": "^3.5.3",
+    "ignore": "^5.3.0",
+    "tar": "^6.2.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.10",
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "@types/tar": "^6.1.10",
+    "esbuild": "^0.19.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
