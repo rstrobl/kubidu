@@ -11,7 +11,7 @@
     "dev:detached": "docker-compose up -d",
     "down": "docker-compose down",
     "down:volumes": "docker-compose down -v",
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace=@kubidu/shared && npm run build --workspace=@kubidu/api --workspace=@kubidu/web --workspace=@kubidu/webhook-service --workspace=@kubidu/build-service --workspace=@kubidu/deploy-controller",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
     "setup": "bash scripts/setup.sh",
