@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api.service';
 import { ProjectUsageStats } from './ProjectUsageStats';
+import { WebhookSettings } from './WebhookSettings';
 
 interface ProjectSettingsModalProps {
   projectId: string;
@@ -19,7 +20,7 @@ export function ProjectSettingsModal({
   onProjectUpdated,
   onProjectDeleted,
 }: ProjectSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'usage' | 'danger'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'webhooks' | 'usage' | 'danger'>('general');
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +85,7 @@ export function ProjectSettingsModal({
 
   const tabLabels: Record<typeof activeTab, string> = {
     general: 'General',
+    webhooks: 'Webhooks',
     usage: 'Usage',
     danger: 'Danger Zone',
   };
@@ -100,10 +102,10 @@ export function ProjectSettingsModal({
 
       {/* Modal */}
       <div className="flex min-h-full items-start justify-center p-4 pt-20">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Project Settings
             </h2>
             <button
@@ -117,9 +119,9 @@ export function ProjectSettingsModal({
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 px-6 bg-white">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-6 bg-white dark:bg-gray-800">
             <nav className="-mb-px flex space-x-8">
-              {(['general', 'usage', 'danger'] as const).map((tab) => (
+              {(['general', 'webhooks', 'usage', 'danger'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -184,6 +186,11 @@ export function ProjectSettingsModal({
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* Webhooks Tab */}
+            {activeTab === 'webhooks' && (
+              <WebhookSettings projectId={projectId} />
             )}
 
             {/* Usage Tab */}
