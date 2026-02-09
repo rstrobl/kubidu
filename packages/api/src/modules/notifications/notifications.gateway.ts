@@ -11,9 +11,14 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Notification } from '@prisma/client';
 
+const getCorsOrigin = () => {
+  const origin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  return origin.includes(',') ? origin.split(',').map(o => o.trim()) : origin;
+};
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: getCorsOrigin(),
     credentials: true,
   },
   namespace: '/notifications',

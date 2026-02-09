@@ -191,9 +191,11 @@ Templates now sorted by user-friendliness:
    - Full UI exists in WebhookSettings component
    - Now integrated into Project Settings modal
 
-5. **Improve error messages** 🔄 PENDING
-   - Make them actionable
-   - Add "What can I do?" suggestions
+5. **Improve error messages** ✅ DONE (2026-02-09)
+   - Created `/utils/errorMessages.ts` with 30+ actionable error messages
+   - Added `ApiError` class to API service for automatic error enhancement
+   - Each error now includes: title, description, and optional action link
+   - Network errors, auth errors, validation, resource limits all covered
 
 ### Low Priority 🟢
 6. **Video tutorials** 🔄 PENDING

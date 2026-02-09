@@ -130,7 +130,7 @@ services:
       MINIO_SECRET_KEY: kubidu_dev_password
       MINIO_USE_SSL: "false"
       K8S_KUBECONFIG_PATH: /kubeconfig/kubeconfig.yaml
-      CORS_ORIGIN: http://localhost:5173,http://46.224.128.211:5173
+      CORS_ORIGIN: "http://localhost:5173,http://46.224.128.211:5173"
       GITHUB_APP_ID: ${GITHUB_APP_ID:-}
       GITHUB_APP_NAME: ${GITHUB_APP_NAME:-kubidu-dev}
       GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}

@@ -22,9 +22,11 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // CORS
+  // CORS - support comma-separated origins
+  const corsOrigin = configService.get('CORS_ORIGIN', 'http://localhost:5173');
+  const origins = corsOrigin.includes(',') ? corsOrigin.split(',').map((o: string) => o.trim()) : corsOrigin;
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN', 'http://localhost:5173'),
+    origin: origins,
     credentials: true,
   });
 

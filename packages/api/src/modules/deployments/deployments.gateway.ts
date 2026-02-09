@@ -12,9 +12,14 @@ import { Server, Socket } from 'socket.io';
 import { DeploymentsService } from './deployments.service';
 import { JwtService } from '@nestjs/jwt';
 
+const getCorsOrigin = () => {
+  const origin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  return origin.includes(',') ? origin.split(',').map(o => o.trim()) : origin;
+};
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: getCorsOrigin(),
     credentials: true,
   },
   namespace: '/deployments',

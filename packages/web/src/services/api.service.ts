@@ -1,7 +1,26 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { RepositoryProvider, ServiceType, WorkspaceRole } from '@kubidu/shared';
+import { getShortErrorMessage } from '../utils/errorMessages';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Enhanced error class with user-friendly message
+export class ApiError extends Error {
+  public readonly status: number;
+  public readonly code: string;
+  public readonly userMessage: string;
+  public readonly originalError: AxiosError;
+
+  constructor(error: AxiosError, context?: string) {
+    const userMessage = getShortErrorMessage(error, context);
+    super(userMessage);
+    this.name = 'ApiError';
+    this.status = error.response?.status || 0;
+    this.code = (error.response?.data as any)?.code || 'UNKNOWN_ERROR';
+    this.userMessage = userMessage;
+    this.originalError = error;
+  }
+}
 
 class ApiService {
   private client: AxiosInstance;
@@ -26,17 +45,20 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // Add response interceptor to handle token refresh
+    // Add response interceptor to handle errors with user-friendly messages
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
+      async (error: AxiosError) => {
+        // Handle 401 - session expired
         if (error.response?.status === 401) {
-          // Clear tokens and redirect to login
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           window.location.href = '/login';
         }
-        return Promise.reject(error);
+        
+        // Enhance error with user-friendly message
+        const enhancedError = new ApiError(error);
+        return Promise.reject(enhancedError);
       }
     );
   }
