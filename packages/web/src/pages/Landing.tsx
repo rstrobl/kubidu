@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
+// User-friendly mode detection (non-tech users get simpler messaging)
+const isSimpleMode = () => {
+  // Check if URL has ?simple or localStorage preference
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('simple')) return true;
+  if (urlParams.has('dev')) return false;
+  return localStorage.getItem('kubidu_simple_mode') === 'true';
+};
+
 // Icons as SVG components for better performance
 const Icons = {
   Rocket: () => (
@@ -139,26 +148,35 @@ const pricingPlans = [
   },
 ];
 
+// Two versions of features: technical and simple
 const features = [
   {
     icon: Icons.Rocket,
     title: 'Deploy Docker Apps',
+    titleSimple: 'Launch Your App',
     description: 'Push any Docker image and watch it go live. Your containers run on Kubernetes with zero config.',
+    descriptionSimple: 'Get your website or app online in minutes. No server setup, no complicated configurations.',
   },
   {
     icon: Icons.Shield,
     title: 'GDPR by Default',
+    titleSimple: 'Privacy Built-In',
     description: 'Data stays in the EU. Privacy-first architecture. Compliant without the headache.',
+    descriptionSimple: 'Your data stays safe in Europe. Meet privacy requirements automatically.',
   },
   {
     icon: Icons.Leaf,
     title: '100% Green Energy',
+    titleSimple: '100% Green Energy',
     description: 'Powered entirely by renewable energy. Deploy sustainably without compromise.',
+    descriptionSimple: 'Powered by renewable energy. Good for your business, good for the planet.',
   },
   {
     icon: Icons.Server,
     title: 'EU-Hosted Infrastructure',
+    titleSimple: 'Fast & Reliable',
     description: 'Your apps run in Frankfurt, Germany. Fast for European users, compliant by design.',
+    descriptionSimple: 'Blazing fast servers in Germany. Your visitors get the best experience.',
   },
 ];
 
@@ -166,17 +184,23 @@ const howItWorks = [
   {
     step: 1,
     title: 'Create a Project',
+    titleSimple: 'Sign Up Free',
     description: 'Sign up in seconds. Create a project to organize your services and environments.',
+    descriptionSimple: 'Create your free account in 30 seconds. No credit card needed.',
   },
   {
     step: 2,
     title: 'Add Your Service',
+    titleSimple: 'Choose a Template',
     description: 'Deploy any Docker image. Set environment variables and resource limits.',
+    descriptionSimple: 'Pick WordPress, a blog, or your own app. We handle the technical stuff.',
   },
   {
     step: 3,
     title: 'Go Live',
+    titleSimple: 'You\'re Online!',
     description: 'Your container runs on Kubernetes. Monitor logs, scale replicas, add domains.',
+    descriptionSimple: 'Your site is live with a free web address. Add your own domain anytime.',
   },
 ];
 
@@ -189,6 +213,7 @@ const trustBadges = [
 
 export function Landing() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [simpleMode, setSimpleMode] = useState(isSimpleMode);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -197,6 +222,13 @@ export function Landing() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Toggle between developer and simple mode
+  const toggleMode = () => {
+    const newMode = !simpleMode;
+    setSimpleMode(newMode);
+    localStorage.setItem('kubidu_simple_mode', String(newMode));
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -254,35 +286,60 @@ export function Landing() {
               <span>GDPR Compliant</span>
             </div>
 
-            {/* Main headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight animate-fade-in-up">
-              Deploy with confidence.
-              <span className="block mt-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                Stay compliant.
-              </span>
-            </h1>
+            {/* Main headline - different for simple vs developer mode */}
+            {simpleMode ? (
+              <>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight animate-fade-in-up">
+                  Your website.
+                  <span className="block mt-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+                    Online in minutes.
+                  </span>
+                </h1>
+                <p className="mt-8 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  Start your blog, launch your business website, or build your online store. 
+                  We handle the technology — you focus on what matters.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight animate-fade-in-up">
+                  Deploy with confidence.
+                  <span className="block mt-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+                    Stay compliant.
+                  </span>
+                </h1>
+                <p className="mt-8 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  The developer-first PaaS that respects your data. Push your code, we handle the rest — from builds to scaling to GDPR compliance.
+                </p>
+              </>
+            )}
 
-            {/* Subheadline */}
-            <p className="mt-8 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              The developer-first PaaS that respects your data. Push your code, we handle the rest — from builds to scaling to GDPR compliance.
-            </p>
-
-            {/* CTA buttons */}
+            {/* CTA buttons - different text for simple mode */}
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <Link
                 to="/register"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all hover:-translate-y-1 shadow-xl shadow-primary-600/25"
               >
-                Start Deploying Free
+                {simpleMode ? 'Start Free — No Credit Card' : 'Start Deploying Free'}
                 <Icons.ArrowRight />
               </Link>
-              <a
-                href="https://github.com/kubidu"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all"
-              >
-                <Icons.GitHub />
-                View on GitHub
-              </a>
+              {simpleMode ? (
+                <button
+                  onClick={toggleMode}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all"
+                >
+                  <Icons.Code />
+                  I'm a Developer
+                </button>
+              ) : (
+                <a
+                  href="https://github.com/kubidu"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all"
+                >
+                  <Icons.GitHub />
+                  View on GitHub
+                </a>
+              )}
             </div>
 
             {/* Value props */}
@@ -304,44 +361,87 @@ export function Landing() {
             </div>
           </div>
 
-          {/* Hero visual - Terminal mockup */}
+          {/* Hero visual - Different for simple vs developer mode */}
           <div className="mt-16 max-w-4xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-primary-600 to-success-500 rounded-2xl blur-2xl opacity-20" />
-              <div className="relative bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
-                {/* Terminal header */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
+              
+              {simpleMode ? (
+                /* Simple mode: Website preview mockup */
+                <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+                  {/* Browser chrome */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-gray-100 border-b border-gray-200">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    <div className="flex-1 ml-4">
+                      <div className="bg-white rounded-lg px-4 py-1.5 text-sm text-gray-600 flex items-center gap-2 max-w-md">
+                        <span className="text-green-600">🔒</span>
+                        <span>your-business.kubidu.io</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="ml-2 text-sm text-gray-400 font-mono">Terminal</span>
+                  {/* Website preview */}
+                  <div className="p-8 bg-gradient-to-br from-gray-50 to-white min-h-[280px]">
+                    <div className="max-w-sm mx-auto text-center">
+                      <div className="w-16 h-16 bg-primary-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-3xl">🏪</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Your Business Name</h3>
+                      <p className="text-gray-500 text-sm mb-6">Your website, blog, or online store — live and ready for visitors!</p>
+                      <div className="flex justify-center gap-3">
+                        <span className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium">Shop Now</span>
+                        <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">Learn More</span>
+                      </div>
+                      <div className="mt-6 flex items-center justify-center gap-4 text-xs text-gray-400">
+                        <span className="flex items-center gap-1"><span className="text-green-500">●</span> Live</span>
+                        <span>•</span>
+                        <span>🔒 SSL Secure</span>
+                        <span>•</span>
+                        <span>🇪🇺 EU Hosted</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {/* Terminal content */}
-                <div className="p-6 font-mono text-sm leading-relaxed">
-                  <div className="text-gray-400"># Deploy a Docker image</div>
-                  <div className="mt-2 text-gray-300">
-                    <span className="text-success-400">✓</span> Pulling nginx:latest...
+              ) : (
+                /* Developer mode: Terminal mockup */
+                <div className="relative bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
+                  {/* Terminal header */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                    </div>
+                    <span className="ml-2 text-sm text-gray-400 font-mono">Terminal</span>
                   </div>
-                  <div className="text-gray-300">
-                    <span className="text-success-400">✓</span> Creating Kubernetes deployment...
-                  </div>
-                  <div className="text-gray-300">
-                    <span className="text-success-400">✓</span> Configuring service in EU-Frankfurt...
-                  </div>
-                  <div className="text-gray-300">
-                    <span className="text-success-400">✓</span> Status: RUNNING
-                  </div>
-                  <div className="mt-2 text-success-400 font-semibold">
-                    🚀 Deployment successful!
-                  </div>
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-gray-500">$</span>
-                    <span className="inline-block w-2 h-5 bg-primary-500 animate-pulse" />
+                  {/* Terminal content */}
+                  <div className="p-6 font-mono text-sm leading-relaxed">
+                    <div className="text-gray-400"># Deploy a Docker image</div>
+                    <div className="mt-2 text-gray-300">
+                      <span className="text-success-400">✓</span> Pulling nginx:latest...
+                    </div>
+                    <div className="text-gray-300">
+                      <span className="text-success-400">✓</span> Creating Kubernetes deployment...
+                    </div>
+                    <div className="text-gray-300">
+                      <span className="text-success-400">✓</span> Configuring service in EU-Frankfurt...
+                    </div>
+                    <div className="text-gray-300">
+                      <span className="text-success-400">✓</span> Status: RUNNING
+                    </div>
+                    <div className="mt-2 text-success-400 font-semibold">
+                      🚀 Deployment successful!
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="text-gray-500">$</span>
+                      <span className="inline-block w-2 h-5 bg-primary-500 animate-pulse" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -384,10 +484,10 @@ export function Landing() {
                   <feature.icon />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                  {feature.title}
+                  {simpleMode ? feature.titleSimple : feature.title}
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  {feature.description}
+                  {simpleMode ? feature.descriptionSimple : feature.description}
                 </p>
               </div>
             ))}
@@ -400,10 +500,10 @@ export function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              From code to production in 3 steps
+              {simpleMode ? 'Get online in 3 simple steps' : 'From code to production in 3 steps'}
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              No DevOps degree required. Get your app live in minutes.
+              {simpleMode ? 'No technical skills needed. We guide you every step of the way.' : 'No DevOps degree required. Get your app live in minutes.'}
             </p>
           </div>
 
@@ -419,10 +519,10 @@ export function Landing() {
                     {step.step}
                   </div>
                   <h3 className="mt-6 text-xl font-semibold text-gray-900">
-                    {step.title}
+                    {simpleMode ? step.titleSimple : step.title}
                   </h3>
                   <p className="mt-3 text-gray-600 max-w-xs">
-                    {step.description}
+                    {simpleMode ? step.descriptionSimple : step.description}
                   </p>
                 </div>
               </div>
@@ -431,25 +531,34 @@ export function Landing() {
         </div>
       </section>
 
-      {/* Code Example Section */}
+      {/* Code Example Section - Different for simple vs developer mode */}
       <section className="py-20 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                Deploy any Docker image
+                {simpleMode ? 'Everything you need, included' : 'Deploy any Docker image'}
               </h2>
               <p className="mt-4 text-lg text-gray-600">
-                Node.js, Python, Go, Ruby, Rust — if it runs in Docker, it runs on Kubidu. Your containers, our infrastructure.
+                {simpleMode 
+                  ? 'No hidden fees, no complicated setup. Start with our free plan and grow at your own pace.'
+                  : 'Node.js, Python, Go, Ruby, Rust — if it runs in Docker, it runs on Kubidu. Your containers, our infrastructure.'
+                }
               </p>
               <ul className="mt-8 space-y-4">
-                {[
+                {(simpleMode ? [
+                  'Free custom web address (yoursite.kubidu.io)',
+                  'Automatic security (SSL/HTTPS)',
+                  'Your data safe in Europe',
+                  'Email support when you need help',
+                  'Grow as your business grows',
+                ] : [
                   'Deploy any Docker image',
                   'Encrypted environment variables',
                   'Resource limits (CPU & RAM)',
                   'Real-time deployment logs',
                   'Kubernetes-powered reliability',
-                ].map((item, index) => (
+                ]).map((item, index) => (
                   <li key={index} className="flex items-center gap-3">
                     <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-success-100 text-success-600">
                       <Icons.Check />
@@ -461,11 +570,36 @@ export function Landing() {
             </div>
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-primary-600 to-success-500 rounded-2xl blur-2xl opacity-10" />
-              <div className="relative bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
-                <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
-                  <span className="text-sm text-gray-400 font-mono">kubidu.yaml</span>
+              
+              {simpleMode ? (
+                /* Simple mode: Show use cases instead of code */
+                <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 p-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Popular Templates</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { icon: '📝', name: 'WordPress Blog', desc: 'Start writing today' },
+                      { icon: '🛍️', name: 'Online Store', desc: 'Sell your products' },
+                      { icon: '📊', name: 'Business Site', desc: 'Professional presence' },
+                      { icon: '📸', name: 'Portfolio', desc: 'Showcase your work' },
+                    ].map((template, i) => (
+                      <div key={i} className="p-4 bg-gray-50 rounded-xl text-center hover:bg-primary-50 transition-colors cursor-pointer">
+                        <span className="text-3xl block mb-2">{template.icon}</span>
+                        <span className="font-medium text-gray-900 block">{template.name}</span>
+                        <span className="text-xs text-gray-500">{template.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-6 text-center text-sm text-gray-500">
+                    ...and many more one-click templates
+                  </p>
                 </div>
-                <pre className="p-6 font-mono text-sm text-gray-300 overflow-x-auto">
+              ) : (
+                /* Developer mode: Show code */
+                <div className="relative bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+                    <span className="text-sm text-gray-400 font-mono">kubidu.yaml</span>
+                  </div>
+                  <pre className="p-6 font-mono text-sm text-gray-300 overflow-x-auto">
 {`# Your service configuration
 image: nginx:latest
 port: 80
@@ -483,8 +617,9 @@ env:
 secrets:
   DATABASE_URL: "encrypted..."
   API_KEY: "encrypted..."`}
-                </pre>
-              </div>
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -567,24 +702,27 @@ secrets:
       <section className="py-20 md:py-32 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Ready to deploy sustainably?
+            {simpleMode ? 'Ready to get started?' : 'Ready to deploy sustainably?'}
           </h2>
           <p className="mt-4 text-lg text-primary-100">
-            Green energy. EU-hosted. GDPR compliant. Start deploying in minutes.
+            {simpleMode 
+              ? 'Join thousands of businesses already online with Kubidu. No technical skills required.'
+              : 'Green energy. EU-hosted. GDPR compliant. Start deploying in minutes.'
+            }
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-100 transition-all hover:-translate-y-1 shadow-xl"
             >
-              Start Deploying Free
+              {simpleMode ? 'Create Free Account' : 'Start Deploying Free'}
               <Icons.ArrowRight />
             </Link>
             <a
               href="https://docs.kubidu.io"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white border-2 border-white/30 rounded-xl hover:bg-white/10 transition-all"
             >
-              Read the Docs
+              {simpleMode ? 'Learn More' : 'Read the Docs'}
             </a>
           </div>
         </div>
@@ -661,9 +799,28 @@ secrets:
             <p className="text-sm">
               © {new Date().getFullYear()} Kubidu. All rights reserved.
             </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 bg-success-500 rounded-full" />
-              <span>All systems operational</span>
+            <div className="flex items-center gap-6">
+              {/* Mode toggle */}
+              <button
+                onClick={toggleMode}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                {simpleMode ? (
+                  <>
+                    <Icons.Code />
+                    <span>Developer Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <span>👤</span>
+                    <span>Simple Mode</span>
+                  </>
+                )}
+              </button>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="w-2 h-2 bg-success-500 rounded-full" />
+                <span>All systems operational</span>
+              </div>
             </div>
           </div>
         </div>

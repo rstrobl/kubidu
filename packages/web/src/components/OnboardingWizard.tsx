@@ -39,34 +39,57 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ];
 
+// User-friendly templates first, then developer templates
 const SAMPLE_TEMPLATES = [
+  // Non-tech friendly templates
+  {
+    id: 'wordpress',
+    name: 'WordPress',
+    description: 'Start your blog in minutes',
+    icon: '📝',
+    color: 'bg-blue-100 text-blue-700',
+    category: 'website',
+  },
+  {
+    id: 'ghost',
+    name: 'Ghost Blog',
+    description: 'Modern blogging platform',
+    icon: '👻',
+    color: 'bg-purple-100 text-purple-700',
+    category: 'website',
+  },
+  {
+    id: 'static',
+    name: 'Static Website',
+    description: 'Simple HTML/CSS site',
+    icon: '🌐',
+    color: 'bg-green-100 text-green-700',
+    category: 'website',
+  },
+  // Developer templates
   {
     id: 'nodejs',
-    name: 'Node.js Starter',
-    description: 'Express.js with health checks',
+    name: 'Node.js',
+    description: 'Express.js starter',
     icon: '🟢',
     color: 'bg-green-100 text-green-700',
+    category: 'developer',
   },
   {
     id: 'python',
-    name: 'Python Flask',
-    description: 'Flask API with Gunicorn',
+    name: 'Python',
+    description: 'Flask API',
     icon: '🐍',
     color: 'bg-yellow-100 text-yellow-700',
+    category: 'developer',
   },
   {
     id: 'postgres',
     name: 'PostgreSQL',
-    description: 'Database with persistent storage',
+    description: 'Database',
     icon: '🐘',
     color: 'bg-blue-100 text-blue-700',
-  },
-  {
-    id: 'redis',
-    name: 'Redis Cache',
-    description: 'In-memory data store',
-    icon: '⚡',
-    color: 'bg-red-100 text-red-700',
+    category: 'developer',
   },
 ];
 
@@ -74,6 +97,7 @@ export function OnboardingWizard() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [userType, setUserType] = useState<'website' | 'developer' | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -98,6 +122,12 @@ export function OnboardingWizard() {
   const handleComplete = () => {
     localStorage.setItem('kubidu_onboarding_complete', 'true');
     localStorage.removeItem('kubidu_is_new_user');
+    
+    // Save user preference for simple mode
+    if (userType === 'website') {
+      localStorage.setItem('kubidu_simple_mode', 'true');
+    }
+    
     setIsOpen(false);
 
     // Celebration!
@@ -193,14 +223,48 @@ export function OnboardingWizard() {
                     {step.description}
                   </p>
 
-                  {/* Template selection on step 2 */}
-                  {currentStep === 1 && (
+                  {/* User type selection on step 1 */}
+                  {currentStep === 1 && !userType && (
+                    <div className="mb-8">
+                      <p className="text-sm font-medium text-gray-700 mb-4 text-center">
+                        What best describes you?
+                      </p>
+                      <div className="grid grid-cols-1 gap-3">
+                        <button
+                          onClick={() => setUserType('website')}
+                          className="p-4 rounded-xl border-2 border-gray-100 hover:border-primary-300 hover:bg-primary-50 text-left transition-all flex items-center gap-4"
+                        >
+                          <span className="text-4xl">🌐</span>
+                          <div>
+                            <span className="font-semibold text-gray-900 block">I want a website</span>
+                            <span className="text-sm text-gray-500">Blog, portfolio, business site, or online store</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setUserType('developer')}
+                          className="p-4 rounded-xl border-2 border-gray-100 hover:border-primary-300 hover:bg-primary-50 text-left transition-all flex items-center gap-4"
+                        >
+                          <span className="text-4xl">💻</span>
+                          <div>
+                            <span className="font-semibold text-gray-900 block">I'm a developer</span>
+                            <span className="text-sm text-gray-500">Deploy Docker apps, APIs, databases</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Template selection on step 1 (after user type is selected) */}
+                  {currentStep === 1 && userType && (
                     <div className="mb-8">
                       <p className="text-sm font-medium text-gray-700 mb-3 text-center">
-                        Start with a template (optional)
+                        {userType === 'website' ? 'Pick a template to get started' : 'Start with a template (optional)'}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
-                        {SAMPLE_TEMPLATES.map((template) => (
+                        {SAMPLE_TEMPLATES
+                          .filter(t => t.category === userType || !userType)
+                          .slice(0, 4)
+                          .map((template) => (
                           <button
                             key={template.id}
                             onClick={() => setSelectedTemplate(
@@ -222,6 +286,12 @@ export function OnboardingWizard() {
                           </button>
                         ))}
                       </div>
+                      <button
+                        onClick={() => setUserType(null)}
+                        className="mt-3 text-xs text-gray-400 hover:text-gray-600 mx-auto block"
+                      >
+                        ← Change selection
+                      </button>
                     </div>
                   )}
 

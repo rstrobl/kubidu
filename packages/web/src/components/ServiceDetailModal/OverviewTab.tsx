@@ -1,8 +1,65 @@
 import { Service } from './types';
+import { HelpTooltip } from '../HelpTooltip';
 
 interface OverviewTabProps {
   service: Service;
 }
+
+// Helper to explain resource values
+const ResourceExplanations = {
+  cpu: (value: string) => {
+    const m = value?.match(/^(\d+)m$/);
+    if (m) {
+      const millicores = parseInt(m[1]);
+      const cores = millicores / 1000;
+      return (
+        <span>
+          <strong>{millicores}m</strong> = {cores} CPU {cores === 1 ? 'core' : 'cores'}
+          <br />
+          <span className="text-gray-400 text-xs">
+            "m" means millicores. 1000m = 1 full CPU core.
+          </span>
+        </span>
+      );
+    }
+    // Plain number like "1" or "2"
+    const n = parseInt(value);
+    if (!isNaN(n)) {
+      return `${n} CPU ${n === 1 ? 'core' : 'cores'}`;
+    }
+    return value;
+  },
+  memory: (value: string) => {
+    const mi = value?.match(/^(\d+)Mi$/);
+    if (mi) {
+      const mebibytes = parseInt(mi[1]);
+      const gb = mebibytes / 1024;
+      return (
+        <span>
+          <strong>{mebibytes}Mi</strong> = {mebibytes} Megabytes ({gb < 1 ? `${(gb * 1024).toFixed(0)}MB` : `${gb.toFixed(1)}GB`})
+          <br />
+          <span className="text-gray-400 text-xs">
+            "Mi" means Mebibytes (≈ Megabytes). 1024Mi = 1Gi = ~1GB.
+          </span>
+        </span>
+      );
+    }
+    const gi = value?.match(/^(\d+)Gi$/);
+    if (gi) {
+      const gibibytes = parseInt(gi[1]);
+      return (
+        <span>
+          <strong>{gibibytes}Gi</strong> = {gibibytes} Gigabytes
+          <br />
+          <span className="text-gray-400 text-xs">
+            "Gi" means Gibibytes (≈ Gigabytes).
+          </span>
+        </span>
+      );
+    }
+    return value;
+  },
+};
 
 export function OverviewTab({ service }: OverviewTabProps) {
   return (
@@ -114,44 +171,102 @@ export function OverviewTab({ service }: OverviewTabProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">Default Port</label>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500">
+              Default Port
+              <HelpTooltip 
+                content="The port your application listens on inside the container. Usually 80, 3000, 8080, etc." 
+                title="Port"
+              />
+            </label>
             <p className="mt-1 text-sm text-gray-900">{service.defaultPort}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">Default Replicas</label>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500">
+              Default Replicas
+              <HelpTooltip 
+                content="Number of copies of your service running at once. More replicas = higher availability and capacity to handle traffic." 
+                title="Replicas"
+              />
+            </label>
             <p className="mt-1 text-sm text-gray-900">{service.defaultReplicas}</p>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Resource Limits</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Resource Limits</h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-500">CPU Limit</label>
-            <p className="mt-1 text-sm text-gray-900">{service.defaultCpuLimit}</p>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+              CPU Limit
+              <HelpTooltip 
+                content={ResourceExplanations.cpu(service.defaultCpuLimit)} 
+                title="CPU Limit"
+              />
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.defaultCpuLimit}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">Memory Limit</label>
-            <p className="mt-1 text-sm text-gray-900">{service.defaultMemoryLimit}</p>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+              Memory Limit
+              <HelpTooltip 
+                content={ResourceExplanations.memory(service.defaultMemoryLimit)} 
+                title="Memory Limit"
+              />
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.defaultMemoryLimit}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">CPU Request</label>
-            <p className="mt-1 text-sm text-gray-900">{service.defaultCpuRequest}</p>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+              CPU Request
+              <HelpTooltip 
+                content={
+                  <span>
+                    {ResourceExplanations.cpu(service.defaultCpuRequest)}
+                    <br /><br />
+                    <span className="text-gray-400 text-xs">
+                      <strong>Request</strong> = guaranteed minimum. <strong>Limit</strong> = maximum allowed.
+                    </span>
+                  </span>
+                } 
+                title="CPU Request"
+              />
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.defaultCpuRequest}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">Memory Request</label>
-            <p className="mt-1 text-sm text-gray-900">{service.defaultMemoryRequest}</p>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+              Memory Request
+              <HelpTooltip 
+                content={
+                  <span>
+                    {ResourceExplanations.memory(service.defaultMemoryRequest)}
+                    <br /><br />
+                    <span className="text-gray-400 text-xs">
+                      <strong>Request</strong> = guaranteed minimum. <strong>Limit</strong> = maximum allowed.
+                    </span>
+                  </span>
+                } 
+                title="Memory Request"
+              />
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.defaultMemoryRequest}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-500">Health Check Path</label>
-            <p className="mt-1 text-sm text-gray-900">{service.defaultHealthCheckPath}</p>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+              Health Check Path
+              <HelpTooltip 
+                content="The URL path we check to verify your service is healthy. Should return HTTP 200 when working correctly." 
+                title="Health Check"
+              />
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.defaultHealthCheckPath}</p>
           </div>
         </div>
       </div>

@@ -76,9 +76,9 @@ export function Layout() {
   const currentProject = projects.find(p => p.id === currentProjectId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -99,7 +99,7 @@ export function Layout() {
               <div className="relative">
                 <button
                   onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900"
                 >
                   {currentProject && (
                     <span className="w-6 h-6 rounded bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-bold">
@@ -115,7 +115,7 @@ export function Layout() {
                 </button>
 
                 {showProjectDropdown && (
-                  <div className="absolute left-0 mt-2 w-72 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden animate-scale-in">
+                  <div className="absolute left-0 mt-2 w-72 rounded-xl shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50 overflow-hidden animate-scale-in">
                     <div className="py-2">
                       <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                         Your Projects
@@ -254,7 +254,7 @@ export function Layout() {
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden animate-scale-in">
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50 overflow-hidden animate-scale-in">
                     {/* User info header */}
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                       <div className="flex items-center gap-3">

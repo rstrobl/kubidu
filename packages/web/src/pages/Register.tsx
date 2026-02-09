@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
+import { markAsNewUser } from '../components/OnboardingWizard';
 
 export function Register() {
   const [name, setName] = useState('');
@@ -37,6 +38,8 @@ export function Register() {
 
     try {
       await register(email, password, name);
+      // Mark as new user to trigger onboarding wizard
+      markAsNewUser();
       navigate('/projects');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
