@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api.service';
 import { useWorkspaceStore } from '../stores/workspace.store';
 
@@ -21,11 +22,12 @@ function ProjectSkeleton() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-    ACTIVE: { bg: 'bg-success-50', text: 'text-success-700', dot: 'bg-success-500' },
-    INACTIVE: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
-    DEPLOYING: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500 animate-pulse' },
-    FAILED: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  const { t } = useTranslation();
+  const statusConfig: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+    ACTIVE: { bg: 'bg-success-50', text: 'text-success-700', dot: 'bg-success-500', label: t('projects.status.active') },
+    INACTIVE: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', label: t('projects.status.inactive') },
+    DEPLOYING: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500 animate-pulse', label: t('projects.status.deploying') },
+    FAILED: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500', label: t('projects.status.failed') },
   };
 
   const config = statusConfig[status] || statusConfig.INACTIVE;
@@ -33,12 +35,13 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-      {status.charAt(0) + status.slice(1).toLowerCase()}
+      {config.label}
     </span>
   );
 }
 
 export function Projects() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentWorkspace } = useWorkspaceStore();
   const [projects, setProjects] = useState<any[]>([]);
@@ -58,7 +61,7 @@ export function Projects() {
       const data = await apiService.getProjects(currentWorkspace.id);
       setProjects(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load projects');
+      setError(err.response?.data?.message || t('errors.failedToLoad', { resource: t('projects.title').toLowerCase() }));
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +81,9 @@ export function Projects() {
       {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('projects.title')}</h1>
           <p className="mt-1 text-gray-500">
-            {currentWorkspace?.name ? `${currentWorkspace.name} workspace` : 'Manage your projects and services'}
+            {currentWorkspace?.name ? t('projects.workspaceSubtitle', { name: currentWorkspace.name }) : t('projects.subtitle')}
           </p>
         </div>
         <Link
@@ -90,7 +93,7 @@ export function Projects() {
           <svg className="w-5 h-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Project
+          {t('projects.newProject')}
         </Link>
       </div>
 
@@ -102,7 +105,7 @@ export function Projects() {
           </svg>
           <span>{error}</span>
           <button onClick={loadProjects} className="btn btn-sm btn-ghost ml-auto">
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       )}
@@ -122,9 +125,9 @@ export function Projects() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <h3 className="empty-state-title text-xl">Create your first project</h3>
+          <h3 className="empty-state-title text-xl">{t('projects.createYourFirst')}</h3>
           <p className="empty-state-description text-base">
-            Projects organize your services, databases, and deployments. Start by creating one!
+            {t('projects.createFirstDescription')}
           </p>
           <Link
             to="/projects/new"
@@ -133,15 +136,15 @@ export function Projects() {
             <svg className="w-5 h-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Project
+            {t('projects.createProject')}
           </Link>
           
           {/* Quick tips */}
           <div className="mt-12 grid sm:grid-cols-3 gap-4 max-w-2xl text-left">
             {[
-              { icon: '🐳', title: 'Docker Ready', desc: 'Deploy any Dockerfile' },
-              { icon: '🔗', title: 'GitHub Integration', desc: 'Auto-deploy on push' },
-              { icon: '🌍', title: 'Custom Domains', desc: 'Free SSL included' },
+              { icon: '🐳', title: t('projects.quickTips.dockerReady'), desc: t('projects.quickTips.dockerDesc') },
+              { icon: '🔗', title: t('projects.quickTips.githubIntegration'), desc: t('projects.quickTips.githubDesc') },
+              { icon: '🌍', title: t('projects.quickTips.customDomains'), desc: t('projects.quickTips.domainsDesc') },
             ].map((tip, i) => (
               <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-gray-50">
                 <span className="text-2xl">{tip.icon}</span>
@@ -158,19 +161,19 @@ export function Projects() {
           {/* Stats bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             <div className="card !p-4">
-              <div className="text-sm text-gray-500">Total Projects</div>
+              <div className="text-sm text-gray-500">{t('projects.totalProjects')}</div>
               <div className="text-2xl font-bold text-gray-900">{projects.length}</div>
             </div>
             <div className="card !p-4">
-              <div className="text-sm text-gray-500">Active</div>
+              <div className="text-sm text-gray-500">{t('projects.active')}</div>
               <div className="text-2xl font-bold text-success-600">{activeCount}</div>
             </div>
             <div className="card !p-4">
-              <div className="text-sm text-gray-500">Services</div>
+              <div className="text-sm text-gray-500">{t('projects.services')}</div>
               <div className="text-2xl font-bold text-gray-900">{totalServices}</div>
             </div>
             <div className="card !p-4 hidden sm:block">
-              <div className="text-sm text-gray-500">Region</div>
+              <div className="text-sm text-gray-500">{t('projects.region')}</div>
               <div className="text-lg font-bold text-gray-900 flex items-center gap-1">
                 🇪🇺 EU-West
               </div>
@@ -196,7 +199,7 @@ export function Projects() {
                         {project.name}
                       </h3>
                       <div className="text-xs text-gray-500">
-                        Created {new Date(project.createdAt).toLocaleDateString()}
+                        {t('projects.createdOn', { date: new Date(project.createdAt).toLocaleDateString() })}
                       </div>
                     </div>
                   </div>
@@ -214,12 +217,12 @@ export function Projects() {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
                     </svg>
-                    <span>{project.services?.length || 0} services</span>
+                    <span>{project.services?.length || 0} {t('nav.services')}</span>
                   </div>
                   {project.services?.some((s: any) => s.status === 'running') && (
                     <div className="flex items-center gap-1.5 text-success-600">
                       <span className="w-2 h-2 rounded-full bg-success-500" />
-                      <span>Running</span>
+                      <span>{t('projects.status.running')}</span>
                     </div>
                   )}
                 </div>
@@ -244,7 +247,7 @@ export function Projects() {
                 </svg>
               </div>
               <span className="font-medium text-gray-600 group-hover:text-primary-600 transition-colors">
-                New Project
+                {t('nav.newProject')}
               </span>
             </Link>
           </div>

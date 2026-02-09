@@ -232,8 +232,14 @@ export class AuthService {
       expiresIn: '30d',
     });
 
-    // Remove sensitive fields from response
-    const { passwordHash, twoFactorSecret, ...userWithoutSensitiveData } = user;
+    // Remove sensitive fields from response (including password reset tokens - SEC-002)
+    const {
+      passwordHash,
+      twoFactorSecret,
+      passwordResetToken,
+      passwordResetExpires,
+      ...userWithoutSensitiveData
+    } = user;
 
     return {
       user: userWithoutSensitiveData as any,

@@ -57,11 +57,35 @@ npm install -g @kubidu/cli
 
 ---
 
-### 3. Website vs Repository Structure Mismatch
+### 3. TWO Separate Documentation Systems!
 **Severity:** HIGH  
-**Impact:** Broken navigation, 404 errors
+**Impact:** Duplicate work, inconsistent content, maintenance nightmare
 
-The live documentation website (http://46.224.128.211:5174) has a completely different structure than the markdown files in the repository.
+**DISCOVERY:** There are TWO separate documentation directories:
+
+| Location | Purpose | Status |
+|----------|---------|--------|
+| `/docs/` | Legacy detailed docs | ❌ NOT used by website |
+| `/packages/docs/` | VitePress website (live) | ✅ Powers the website |
+
+The live website (http://46.224.128.211:5174) uses `/packages/docs/` with VitePress.
+The `/docs/` directory has MORE detailed content but is completely disconnected!
+
+**Content Comparison:**
+
+| Topic | /docs/ (legacy) | /packages/docs/ (website) |
+|-------|-----------------|---------------------------|
+| Quickstart | Detailed, examples | Simpler, cleaner |
+| CLI Reference | Complete | Stub pages |
+| API Reference | Complete | Stub pages |
+| Guides | 7 detailed guides | Minimal |
+| Compliance | Complete GDPR/ISO | Complete GDPR/ISO |
+
+**Resolution Required:**
+- [ ] DECISION: Consolidate into ONE documentation source
+- [ ] Migrate detailed content from `/docs/` to `/packages/docs/`
+- [ ] Delete `/docs/` after migration OR
+- [ ] Symlink content between them
 
 #### Pages on Website (NOT in Repository):
 

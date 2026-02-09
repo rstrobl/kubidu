@@ -94,6 +94,16 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Guides',
+          items: [
+            { text: 'Overview', link: '/guides/' },
+            { text: 'Deploy Node.js App', link: '/guides/nodejs' },
+            { text: 'Connect a Database', link: '/guides/database' },
+            { text: 'Custom Domain Setup', link: '/guides/custom-domain' },
+            { text: 'Env Variables Best Practices', link: '/guides/env-best-practices' }
+          ]
+        },
+        {
           text: 'Support',
           items: [
             { text: 'FAQ', link: '/support/faq' },

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api.service';
 import { useWorkspaceStore } from '../stores/workspace.store';
 
 export function NewProject() {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +18,7 @@ export function NewProject() {
     setError('');
 
     if (!currentWorkspace) {
-      setError('No workspace selected');
+      setError(t('newProject.errors.noWorkspace'));
       return;
     }
 
@@ -30,7 +32,7 @@ export function NewProject() {
       navigate(`/projects/${project.id}`);
     } catch (err: any) {
       setError(
-        err.response?.data?.message || 'Failed to create project. Please try again.'
+        err.response?.data?.message || t('newProject.errors.createFailed')
       );
     } finally {
       setIsLoading(false);
@@ -45,18 +47,18 @@ export function NewProject() {
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link to="/projects" className="hover:text-gray-700 transition-colors">
-          Projects
+          {t('newProject.breadcrumb')}
         </Link>
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-gray-900 font-medium">New Project</span>
+        <span className="text-gray-900 font-medium">{t('nav.newProject')}</span>
       </nav>
 
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Create New Project</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('newProject.title')}</h1>
         <p className="mt-2 text-gray-600">
-          Projects organize your services, databases, and deployments together.
+          {t('newProject.subtitle')}
         </p>
       </div>
 
@@ -73,34 +75,34 @@ export function NewProject() {
         <div className="space-y-6">
           <div className="input-group">
             <label htmlFor="name" className="label">
-              Project Name <span className="text-red-500">*</span>
+              {t('newProject.projectName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               id="name"
               required
               className="input"
-              placeholder="my-awesome-project"
+              placeholder={t('newProject.projectNamePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
             {name && (
               <p className="mt-2 text-sm text-gray-500">
-                Your services will be available at: <code className="code-inline">{slug || 'your-project'}.kubidu.io</code>
+                {t('newProject.servicesAvailableAt')} <code className="code-inline">{slug || 'your-project'}.kubidu.io</code>
               </p>
             )}
           </div>
 
           <div className="input-group">
             <label htmlFor="description" className="label">
-              Description <span className="text-gray-400 font-normal">(optional)</span>
+              {t('newProject.description')} <span className="text-gray-400 font-normal">({t('common.optional')})</span>
             </label>
             <textarea
               id="description"
               rows={3}
               className="input resize-none"
-              placeholder="What does this project do?"
+              placeholder={t('newProject.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -112,20 +114,20 @@ export function NewProject() {
               <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              What happens next?
+              {t('newProject.whatsNext')}
             </h3>
             <ul className="space-y-2 text-sm text-gray-600">
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">1</span>
-                Connect a GitHub repo or Docker image
+                {t('newProject.steps.connectGitHub')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">2</span>
-                Configure environment variables
+                {t('newProject.steps.configureEnvVars')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">3</span>
-                Deploy with one click!
+                {t('newProject.steps.deployOneClick')}
               </li>
             </ul>
           </div>
@@ -139,14 +141,14 @@ export function NewProject() {
               {isLoading ? (
                 <>
                   <span className="spinner spinner-sm" />
-                  Creating...
+                  {t('newProject.creating')}
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Create Project
+                  {t('newProject.createProject')}
                 </>
               )}
             </button>
@@ -154,7 +156,7 @@ export function NewProject() {
               to="/projects"
               className="btn btn-secondary"
             >
-              Cancel
+              {t('common.cancel')}
             </Link>
           </div>
         </div>
@@ -165,15 +167,15 @@ export function NewProject() {
         <div className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 bg-white">
           <span className="text-2xl">🔗</span>
           <div>
-            <div className="font-medium text-gray-900">GitHub Integration</div>
-            <div className="text-sm text-gray-500">Auto-deploy on every push to main</div>
+            <div className="font-medium text-gray-900">{t('newProject.tips.githubIntegration')}</div>
+            <div className="text-sm text-gray-500">{t('newProject.tips.githubDesc')}</div>
           </div>
         </div>
         <div className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 bg-white">
           <span className="text-2xl">🔒</span>
           <div>
-            <div className="font-medium text-gray-900">Secure by Default</div>
-            <div className="text-sm text-gray-500">Free SSL, encrypted secrets</div>
+            <div className="font-medium text-gray-900">{t('newProject.tips.secureByDefault')}</div>
+            <div className="text-sm text-gray-500">{t('newProject.tips.secureDesc')}</div>
           </div>
         </div>
       </div>

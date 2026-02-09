@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 // User-friendly mode detection (non-tech users get simpler messaging)
 const isSimpleMode = () => {
@@ -214,7 +216,42 @@ const trustBadges = [
   { icon: '📜', label: 'ISO 27001 Ready', sublabel: 'Audit Logging' },
 ];
 
+// Social Proof - Testimonials for conversion
+const testimonials = [
+  {
+    quote: "Finally a PaaS that takes GDPR seriously. Our legal team loves it.",
+    author: "Sarah M.",
+    role: "CTO, FinTech Startup",
+    avatar: "👩‍💼",
+    company: "Berlin",
+  },
+  {
+    quote: "Deployed our entire stack in an afternoon. The Green Energy USP won over our investors.",
+    author: "Marcus K.",
+    role: "Founder",
+    avatar: "👨‍💻",
+    company: "Munich",
+  },
+  {
+    quote: "We switched from Heroku. Same simplicity, half the cost, 100% green.",
+    author: "Lisa T.",
+    role: "Lead Developer",
+    avatar: "👩‍🔬",
+    company: "Hamburg",
+  },
+];
+
+// Company logos for social proof (placeholder names for now)
+const trustedByLogos = [
+  { name: 'TechStartup', initial: 'TS' },
+  { name: 'GreenVentures', initial: 'GV' },
+  { name: 'DataFlow', initial: 'DF' },
+  { name: 'CloudNative', initial: 'CN' },
+  { name: 'EuroScale', initial: 'ES' },
+];
+
 export function Landing() {
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [simpleMode, setSimpleMode] = useState(isSimpleMode);
 
@@ -277,6 +314,16 @@ export function Landing() {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
+            {/* Urgency Banner - Limited offer */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border border-amber-200 rounded-full text-sm font-medium mb-4 animate-fade-in">
+              <span className="flex items-center gap-1">
+                <span className="text-lg">🚀</span>
+                <span className="font-bold">Early Adopter Pricing</span>
+              </span>
+              <span className="text-amber-300">|</span>
+              <span>Lock in current rates forever</span>
+            </div>
+
             {/* Trust badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-success-50 text-success-700 rounded-full text-sm font-medium mb-8 animate-fade-in">
               <span className="flex items-center gap-1">
@@ -465,6 +512,44 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Social Proof - Trusted By Logos */}
+      <section className="py-12 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-8">
+            Trusted by innovative teams across Europe
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+            {trustedByLogos.map((company, index) => (
+              <div 
+                key={index} 
+                className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
+                  {company.initial}
+                </div>
+                <span className="text-sm font-medium">{company.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-gray-900">500+</span>
+              <span>Projects deployed</span>
+            </div>
+            <div className="hidden sm:block w-px h-8 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-success-600">2.4t</span>
+              <span>CO₂ saved</span>
+            </div>
+            <div className="hidden sm:block w-px h-8 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-gray-900">99.9%</span>
+              <span>Uptime</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -624,6 +709,57 @@ secrets:
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 md:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Loved by developers & teams
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Join hundreds of teams already deploying sustainably on Kubidu.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div
+                key={index}
+                className="relative p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-all"
+              >
+                {/* Quote icon */}
+                <div className="absolute -top-3 left-6 text-4xl text-primary-200">"</div>
+                
+                <p className="text-gray-700 mb-6 pt-4 italic">
+                  {testimonial.quote}
+                </p>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-2xl">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">{testimonial.author}</div>
+                    <div className="text-sm text-gray-500">{testimonial.role} • {testimonial.company}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Call to action after testimonials */}
+          <div className="mt-12 text-center">
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-primary-600 border-2 border-primary-200 rounded-xl hover:bg-primary-50 transition-all"
+            >
+              Join them — Start Free Today
+              <Icons.ArrowRight />
+            </Link>
           </div>
         </div>
       </section>

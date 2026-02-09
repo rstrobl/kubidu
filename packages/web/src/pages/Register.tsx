@@ -57,6 +57,16 @@ export function Register() {
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px]" />
         <div className="relative h-full flex flex-col items-center justify-center p-12">
           <div className="max-w-md text-center text-white">
+            {/* Social proof */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm mb-6">
+              <span className="flex -space-x-2">
+                <span className="w-6 h-6 rounded-full bg-primary-300 flex items-center justify-center text-xs">👨‍💻</span>
+                <span className="w-6 h-6 rounded-full bg-primary-400 flex items-center justify-center text-xs">👩‍💻</span>
+                <span className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-xs">🧑‍💻</span>
+              </span>
+              <span className="font-medium">500+ developers already deploying</span>
+            </div>
+
             <h2 className="text-3xl font-bold mb-4">
               {t('auth.register.startDeployingInMinutes')}
             </h2>

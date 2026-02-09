@@ -10,19 +10,26 @@ export class UsersService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async findById(id: string): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret'>> {
+  async findById(id: string): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret' | 'passwordResetToken' | 'passwordResetExpires'>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const { passwordHash, twoFactorSecret, ...userWithoutSensitiveData } = user;
+    // Remove all sensitive fields including password reset tokens (SEC-002)
+    const {
+      passwordHash,
+      twoFactorSecret,
+      passwordResetToken,
+      passwordResetExpires,
+      ...userWithoutSensitiveData
+    } = user;
 
     return userWithoutSensitiveData;
   }
 
-  async updateProfile(userId: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret'>> {
+  async updateProfile(userId: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret' | 'passwordResetToken' | 'passwordResetExpires'>> {
     await this.findById(userId);
 
     const updates: any = {};
@@ -40,7 +47,14 @@ export class UsersService {
       data: updates,
     });
 
-    const { passwordHash, twoFactorSecret, ...userWithoutSensitiveData } = user;
+    // Remove all sensitive fields including password reset tokens (SEC-002)
+    const {
+      passwordHash,
+      twoFactorSecret,
+      passwordResetToken,
+      passwordResetExpires,
+      ...userWithoutSensitiveData
+    } = user;
 
     return userWithoutSensitiveData;
   }

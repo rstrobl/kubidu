@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/auth.store';
 import { apiService } from '../services/api.service';
 import { TwoFactorSettings } from '../components/TwoFactorSettings';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 export function Settings() {
+  const { t, i18n } = useTranslation();
   const { user, loadUser } = useAuthStore();
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -31,10 +34,10 @@ export function Settings() {
         avatarUrl: avatarUrl || undefined,
       });
       await loadUser();
-      setSuccess('Profile updated successfully.');
+      setSuccess(t('settings.profile.profileUpdated'));
     } catch (err: any) {
       setError(
-        err.response?.data?.message || 'Failed to update profile. Please try again.'
+        err.response?.data?.message || t('errors.general')
       );
     } finally {
       setIsLoading(false);
@@ -45,9 +48,9 @@ export function Settings() {
     <div className="max-w-3xl mx-auto px-4 sm:px-0 animate-fade-in">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('settings.title')}</h1>
         <p className="mt-2 text-gray-500">
-          Manage your profile and account settings
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -59,8 +62,8 @@ export function Settings() {
               {(name || user?.email || '?').charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
-              <p className="text-sm text-gray-500">Your personal information</p>
+              <h2 className="text-lg font-semibold text-gray-900">{t('settings.profile.title')}</h2>
+              <p className="text-sm text-gray-500">{t('settings.profile.subtitle')}</p>
             </div>
           </div>
 
@@ -85,13 +88,13 @@ export function Settings() {
           <div className="space-y-5">
             <div className="input-group">
               <label htmlFor="name" className="label">
-                Full Name
+                {t('settings.profile.fullName')}
               </label>
               <input
                 type="text"
                 id="name"
                 className="input"
-                placeholder="Your full name"
+                placeholder={t('settings.profile.namePlaceholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -99,7 +102,7 @@ export function Settings() {
 
             <div className="input-group">
               <label htmlFor="email" className="label">
-                Email
+                {t('settings.profile.email')}
               </label>
               <input
                 type="email"
@@ -109,19 +112,19 @@ export function Settings() {
                 value={user?.email || ''}
               />
               <p className="mt-1 text-sm text-gray-400">
-                Email cannot be changed
+                {t('settings.profile.emailCannotChange')}
               </p>
             </div>
 
             <div className="input-group">
               <label htmlFor="avatarUrl" className="label">
-                Avatar URL <span className="text-gray-400 font-normal">(optional)</span>
+                {t('settings.profile.avatarUrl')} <span className="text-gray-400 font-normal">({t('common.optional')})</span>
               </label>
               <input
                 type="url"
                 id="avatarUrl"
                 className="input"
-                placeholder="https://example.com/avatar.png"
+                placeholder={t('settings.profile.avatarPlaceholder')}
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
               />
@@ -136,15 +139,36 @@ export function Settings() {
                 {isLoading ? (
                   <>
                     <span className="spinner spinner-sm" />
-                    Saving...
+                    {t('settings.profile.saving')}
                   </>
                 ) : (
-                  'Save Changes'
+                  t('settings.profile.saveChanges')
                 )}
               </button>
             </div>
           </div>
         </form>
+
+        {/* Language Card */}
+        <div className="card">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+              <span className="text-2xl">🌐</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Language / Sprache</h2>
+              <p className="text-sm text-gray-500">
+                {i18n.language === 'de' ? 'Wähle deine bevorzugte Sprache' : 'Choose your preferred language'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-700">
+              {i18n.language === 'de' ? 'Aktuelle Sprache' : 'Current language'}
+            </span>
+            <LanguageSwitcher variant="dropdown" />
+          </div>
+        </div>
 
         {/* Account Card */}
         <div className="card">
@@ -155,15 +179,15 @@ export function Settings() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Security</h2>
-              <p className="text-sm text-gray-500">Manage your account security</p>
+              <h2 className="text-lg font-semibold text-gray-900">{t('settings.security.title')}</h2>
+              <p className="text-sm text-gray-500">{t('settings.security.subtitle')}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
               <div>
-                <p className="font-medium text-gray-900">Email Verification</p>
+                <p className="font-medium text-gray-900">{t('settings.security.emailVerification')}</p>
                 <p className="text-sm text-gray-500">{user?.email}</p>
               </div>
               {user?.emailVerified ? (
@@ -171,10 +195,10 @@ export function Settings() {
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
-                  Verified
+                  {t('settings.security.verified')}
                 </span>
               ) : (
-                <span className="badge badge-warning">Not verified</span>
+                <span className="badge badge-warning">{t('settings.security.notVerified')}</span>
               )}
             </div>
 
@@ -182,10 +206,10 @@ export function Settings() {
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
               <div>
-                <p className="font-medium text-gray-900">Password</p>
-                <p className="text-sm text-gray-500">Last changed: Never</p>
+                <p className="font-medium text-gray-900">{t('settings.security.password')}</p>
+                <p className="text-sm text-gray-500">{t('settings.security.neverChanged')}</p>
               </div>
-              <button className="btn btn-sm btn-secondary">Change</button>
+              <button className="btn btn-sm btn-secondary">{t('settings.security.change')}</button>
             </div>
           </div>
         </div>
@@ -202,8 +226,8 @@ export function Settings() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-gray-900">Notification Preferences</p>
-              <p className="text-sm text-gray-500">Configure email and push notifications</p>
+              <p className="font-medium text-gray-900">{t('settings.notifications.title')}</p>
+              <p className="text-sm text-gray-500">{t('settings.notifications.subtitle')}</p>
             </div>
           </div>
           <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -223,8 +247,8 @@ export function Settings() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-gray-900">Billing & Plans</p>
-              <p className="text-sm text-gray-500">View usage, invoices, and upgrade your plan</p>
+              <p className="font-medium text-gray-900">{t('settings.billing.title')}</p>
+              <p className="text-sm text-gray-500">{t('settings.billing.subtitle')}</p>
             </div>
           </div>
           <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -239,10 +263,10 @@ export function Settings() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>
-              Member since{' '}
+              {t('settings.memberSince')}{' '}
               <strong>
                 {user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString(undefined, {
+                  ? new Date(user.createdAt).toLocaleDateString(i18n.language, {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -255,11 +279,11 @@ export function Settings() {
 
         {/* Danger Zone */}
         <div className="card border-red-200">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
+          <h2 className="text-lg font-semibold text-red-600 mb-2">{t('settings.dangerZone.title')}</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Once you delete your account, there is no going back. Please be certain.
+            {t('settings.dangerZone.warning')}
           </p>
-          <button className="btn btn-danger btn-sm">Delete Account</button>
+          <button className="btn btn-danger btn-sm">{t('settings.dangerZone.deleteAccount')}</button>
         </div>
       </div>
     </div>

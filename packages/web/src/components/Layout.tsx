@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/auth.store';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { apiService } from '../services/api.service';
@@ -10,11 +11,13 @@ import { CommandPalette } from './CommandPalette';
 import { OnboardingWizard } from './OnboardingWizard';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { DarkModeToggle } from './DarkModeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { Toaster } from 'sonner';
 import { GlobalSearch } from './GlobalSearch';
 
 export function Layout() {
+  const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const { currentWorkspace, loadWorkspaces } = useWorkspaceStore();
   const navigate = useNavigate();
@@ -105,7 +108,7 @@ export function Layout() {
                     </span>
                   )}
                   <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                    {currentProject ? currentProject.name : 'Select Project'}
+                    {currentProject ? currentProject.name : t('nav.selectProject')}
                   </span>
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -116,12 +119,12 @@ export function Layout() {
                   <div className="absolute left-0 mt-2 w-72 rounded-xl shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50 overflow-hidden animate-scale-in">
                     <div className="py-2">
                       <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                        Your Projects
+                        {t('nav.yourProjects')}
                       </div>
                       {isLoading ? (
-                        <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                        <div className="px-4 py-3 text-sm text-gray-500">{t('common.loading')}</div>
                       ) : projects.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-gray-500">No projects yet</div>
+                        <div className="px-4 py-3 text-sm text-gray-500">{t('nav.noProjectsYet')}</div>
                       ) : (
                         <div className="max-h-64 overflow-y-auto scrollbar-thin">
                           {projects.map((project) => (
@@ -165,7 +168,7 @@ export function Layout() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                           </span>
-                          <span className="font-medium">New Project</span>
+                          <span className="font-medium">{t('nav.newProject')}</span>
                         </Link>
                       </div>
                     </div>
@@ -326,16 +329,34 @@ export function Layout() {
                         <span className="w-4 h-4 text-center">📋</span>
                         Audit Logs
                       </Link>
+                      <a
+                        href="https://github.com/kubidu-cloud/kubidu/tree/main/docs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setShowUserMenu(false)}
+                        className="dropdown-item"
+                      >
+                        <span className="w-4 h-4 text-center">📚</span>
+                        Documentation
+                      </a>
+                    </div>
+
+                    {/* Language Switcher */}
+                    <div className="px-4 py-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">🌐 Language</span>
+                        <LanguageSwitcher variant="inline" showLabel={true} />
+                      </div>
                     </div>
 
                     {/* Footer with region info */}
                     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <span>🇪🇺</span>
-                        <span>EU-West Region</span>
+                        <span>{t('nav.euWestRegion')}</span>
                         <span className="ml-auto flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-success-500 rounded-full" />
-                          Online
+                          {t('nav.online')}
                         </span>
                       </div>
                     </div>

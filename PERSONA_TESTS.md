@@ -437,3 +437,70 @@ Diese PM-Session hat alle 6 Personas systematisch getestet:
 *Kubidu Product Manager - Django AI*
 *2026-02-09*
 
+
+---
+
+## 🔄 ZYKLUS 2 - Update (03:00 UTC)
+
+**Server Status:** ✅ Online
+- Web: http://46.224.128.211:5173 ✅
+- API: http://46.224.128.211:3000 ✅
+
+**Fix Verifizierung:**
+- Deutsche Recommendations in cost.service.ts gespeichert
+- API wurde restarted
+- Fix aktiv für neue API-Calls
+
+**Nächste Tests:**
+1. Deeper Indie Hacker Testing
+2. Edge Cases
+3. Mobile Responsive Check
+
+
+### 🔴 ISSUE: Docs nicht im Web erreichbar
+
+**Problem:**
+- Gute Docs existieren in `/docs/` Ordner:
+  - `getting-started/quickstart.md`
+  - `getting-started/first-deploy.md`
+  - `getting-started/installation.md`
+  - `guides/`
+  - `reference/`
+
+**Aber:**
+- Kein `/docs` Route im Web
+- Indie Hackers/Devs können Docs nicht finden!
+
+**Empfehlung:**
+1. Docs in Web-App integrieren (Markdown → HTML)
+2. Oder: Link zu docs.kubidu.io in Nav
+
+**Quick Fix möglich:**
+- Docs Link in Navigation auf GitHub Repo zeigen
+- Oder: Static docs mit Docusaurus/VitePress bauen
+
+
+### ✅ Fix angewendet: Docs Link (03:05 UTC)
+
+**Datei:** `packages/web/src/components/Layout.tsx`
+
+**Änderung:**
+- Docs Link im User Dropdown Menu hinzugefügt
+- Zeigt auf: https://github.com/kubidu-cloud/kubidu/tree/main/docs
+- Öffnet in neuem Tab
+
+**Status:** ✅ Web Container restarted, Fix aktiv
+
+---
+
+## 📊 FIXES ZUSAMMENFASSUNG
+
+| # | Issue | Status | Datei |
+|---|-------|--------|-------|
+| 1 | Deutsche API Recommendations | ✅ FIXED | cost.service.ts |
+| 2 | Docs Link im User Menu | ✅ FIXED | Layout.tsx |
+
+**Noch offen:**
+- Plan-Name Konsistenz (Hobby vs Free)
+- Vollständige i18n Lokalisierung
+
