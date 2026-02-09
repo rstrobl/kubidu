@@ -95,6 +95,7 @@ describe('ServicesService', () => {
       },
       deployment: {
         create: jest.fn(),
+        findUnique: jest.fn(),
       },
       gitHubInstallation: {
         findUnique: jest.fn(),
@@ -680,6 +681,157 @@ describe('ServicesService', () => {
       await service.create(mockUser.id, mockProject.id, createDto);
 
       expect(prisma.environmentVariable.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('rollback', () => {
+    it('should create new deployment based on target deployment', async () => {
+      const targetDeployment = {
+        id: 'deploy-old-123',
+        serviceId: mockService.id,
+        name: 'old-deployment',
+        imageUrl: 'registry.example.com/app',
+        imageTag: 'v1.0.0',
+        gitCommitSha: 'abc123',
+        gitAuthor: 'Developer',
+        port: 8080,
+        replicas: 2,
+        cpuLimit: '500m',
+        memoryLimit: '256Mi',
+        cpuRequest: '100m',
+        memoryRequest: '128Mi',
+        healthCheckPath: '/health',
+      };
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(mockService);
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(targetDeployment);
+      (prisma.deployment.create as jest.Mock).mockResolvedValue({
+        id: 'new-deploy-123',
+        ...targetDeployment,
+        gitCommitMessage: `Rollback to abc123`,
+      });
+
+      const result = await service.rollback(
+        mockUser.id,
+        mockProject.id,
+        mockService.id,
+        targetDeployment.id,
+      );
+
+      expect(result.message).toBe('Rollback initiated successfully');
+      expect(result.deployment).toBeDefined();
+      expect(result.rolledBackFrom).toBe(targetDeployment.id);
+    });
+
+    it('should throw NotFoundException when service not found', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.rollback(mockUser.id, mockProject.id, 'nonexistent', 'deploy-123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when target deployment not found', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(mockService);
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.rollback(mockUser.id, mockProject.id, mockService.id, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when deployment belongs to different service', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(mockService);
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue({
+        id: 'deploy-123',
+        serviceId: 'different-service',
+      });
+
+      await expect(
+        service.rollback(mockUser.id, mockProject.id, mockService.id, 'deploy-123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMetrics', () => {
+    it('should return metrics for a service with active deployment', async () => {
+      const serviceWithDeployment = {
+        ...mockService,
+        deployments: [
+          { id: 'active-deploy-123', status: 'RUNNING' },
+        ],
+      };
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(serviceWithDeployment);
+
+      const result = await service.getMetrics(
+        mockUser.id,
+        mockProject.id,
+        mockService.id,
+      );
+
+      expect(result.serviceId).toBe(mockService.id);
+      expect(result.serviceName).toBe(mockService.name);
+      expect(result.activeDeploymentId).toBe('active-deploy-123');
+      expect(result.cpuUsage).toBeDefined();
+      expect(result.memoryUsage).toBeDefined();
+      expect(result.timestamp).toBeDefined();
+    });
+
+    it('should return metrics without active deployment', async () => {
+      const serviceNoDeployment = {
+        ...mockService,
+        deployments: [],
+      };
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(serviceNoDeployment);
+
+      const result = await service.getMetrics(
+        mockUser.id,
+        mockProject.id,
+        mockService.id,
+      );
+
+      expect(result.serviceId).toBe(mockService.id);
+      expect(result.activeDeploymentId).toBeUndefined();
+    });
+
+    it('should throw NotFoundException when service not found', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.getMetrics(mockUser.id, mockProject.id, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when service belongs to different project', async () => {
+      const serviceOtherProject = {
+        ...mockService,
+        projectId: 'other-project',
+        deployments: [],
+      };
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(serviceOtherProject);
+
+      await expect(
+        service.getMetrics(mockUser.id, mockProject.id, mockService.id),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
