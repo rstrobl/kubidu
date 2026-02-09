@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { apiService } from '../services/api.service';
 import { GitHubRepoPicker } from './GitHubRepoPicker';
 import { Template } from '@kubidu/shared';
+import { TemplateDeployModal } from './TemplateDeployModal';
 
 interface AddServiceModalProps {
   projectId: string;
@@ -28,7 +29,6 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
   // Template state
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [templateInputs, setTemplateInputs] = useState<Record<string, string>>({});
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Load templates when template type is selected
@@ -84,7 +84,6 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
       setError('');
       submittingRef.current = false;
       setSelectedTemplate(null);
-      setTemplateInputs({});
     }
   }, [isOpen]);
 
@@ -156,32 +155,6 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
       dockerImage: image,
       dockerTag: tag,
     });
-  };
-
-  const handleTemplateSubmit = async () => {
-    if (!selectedTemplate) {
-      setError('Please select a template');
-      return;
-    }
-
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      await apiService.deployTemplate(projectId, {
-        templateId: selectedTemplate.id,
-        inputs: templateInputs,
-      });
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to deploy template');
-    } finally {
-      setIsSubmitting(false);
-      submittingRef.current = false;
-    }
   };
 
   const generateDockerName = (): string => {
@@ -324,21 +297,62 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
             {/* Docker Image Configuration */}
             {serviceType === 'DOCKER_IMAGE' && (
               <div>
-                <label htmlFor="dockerImage" className="block text-sm font-medium text-gray-700 mb-1">
-                  Docker Image *
-                </label>
-                <input
-                  type="text"
-                  id="dockerImage"
-                  value={dockerImage}
-                  onChange={(e) => setDockerImage(e.target.value)}
-                  placeholder="postgres:14 or registry.com/image:tag"
-                  className="input"
-                  required
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  The Docker image to deploy (e.g., postgres:14, nginx:latest)
-                </p>
+                {/* Popular Images Quick Pick */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quick Start
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'ghost:5-alpine', icon: 'https://ghost.org/favicon.ico', label: 'Ghost Blog' },
+                      { name: 'postgres:16', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg', label: 'PostgreSQL' },
+                      { name: 'n8nio/n8n', icon: 'https://n8n.io/favicon.ico', label: 'n8n Automation' },
+                      { name: 'louislam/uptime-kuma', icon: 'https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.svg', label: 'Uptime Kuma' },
+                      { name: 'redis:7', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg', label: 'Redis' },
+                    ].map((img) => (
+                      <button
+                        key={img.name}
+                        type="button"
+                        onClick={() => setDockerImage(img.name)}
+                        className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                          dockerImage === img.name
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <img src={img.icon} alt={img.label} className="w-4 h-4" />
+                        <span>{img.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-white text-gray-400">or enter custom image</span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label htmlFor="dockerImage" className="block text-sm font-medium text-gray-700 mb-1">
+                    Docker Image *
+                  </label>
+                  <input
+                    type="text"
+                    id="dockerImage"
+                    value={dockerImage}
+                    onChange={(e) => setDockerImage(e.target.value)}
+                    placeholder="postgres:14 or registry.com/image:tag"
+                    className="input"
+                    required
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    The Docker image to deploy (e.g., postgres:14, nginx:latest)
+                  </p>
+                </div>
               </div>
             )}
 
@@ -357,22 +371,21 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    <p className="text-sm text-gray-500 mb-3">
+                      Click a template to configure and deploy
+                    </p>
                     {templates.map((template) => (
                       <button
                         key={template.id}
                         type="button"
                         onClick={() => setSelectedTemplate(template)}
-                        className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
-                          selectedTemplate?.id === template.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className="w-full p-4 border-2 rounded-lg text-left transition-colors border-gray-200 hover:border-primary-300 hover:bg-primary-50 group"
                       >
                         <div className="flex items-center">
                           <span className="mr-3 flex items-center justify-center w-8 h-8">{renderTemplateIcon(template)}</span>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{template.name}</span>
+                              <span className="font-medium text-gray-900 group-hover:text-primary-700">{template.name}</span>
                               {template.isOfficial && (
                                 <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Official</span>
                               )}
@@ -384,27 +397,30 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                               <p className="text-sm text-gray-500 mt-1">{template.description}</p>
                             )}
                           </div>
-                          <svg className={`w-5 h-5 ${selectedTemplate?.id === template.id ? 'text-primary-600' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          <svg className="w-5 h-5 text-gray-300 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
-
-                {/* Template details & inputs would go here when selected */}
-                {selectedTemplate && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">
-                      Deploy {selectedTemplate.name}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      This will create {(selectedTemplate.definition as any)?.services?.length || 0} service(s) in your project.
-                    </p>
-                  </div>
-                )}
               </div>
+            )}
+
+            {/* Template Deploy Modal */}
+            {selectedTemplate && (
+              <TemplateDeployModal
+                projectId={projectId}
+                template={selectedTemplate}
+                isOpen={true}
+                onClose={() => setSelectedTemplate(null)}
+                onSuccess={() => {
+                  setSelectedTemplate(null);
+                  onSuccess();
+                  onClose();
+                }}
+              />
             )}
 
             {/* Generated Name Preview (Docker only — GitHub submits immediately) */}
@@ -433,15 +449,6 @@ export function AddServiceModal({ projectId, isOpen, onClose, onSuccess }: AddSe
                 disabled={isSubmitting || !generateDockerName()}
               >
                 {isSubmitting ? 'Creating...' : 'Create Service'}
-              </button>
-            )}
-            {serviceType === 'TEMPLATE' && (
-              <button
-                onClick={handleTemplateSubmit}
-                className="btn btn-primary"
-                disabled={isSubmitting || !selectedTemplate}
-              >
-                {isSubmitting ? 'Deploying...' : 'Deploy Template'}
               </button>
             )}
           </div>

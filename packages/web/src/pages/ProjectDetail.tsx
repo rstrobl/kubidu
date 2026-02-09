@@ -4,6 +4,7 @@ import { apiService } from '../services/api.service';
 import { AddServiceModal } from '../components/AddServiceModal';
 import { ServiceDetailModal } from '../components/ServiceDetailModal';
 import { ServiceCanvas } from '../components/ServiceCanvas';
+import { QuickDeploySection } from '../components/QuickDeploySection';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -108,46 +109,65 @@ export function ProjectDetail() {
     <div className="fixed inset-0 top-16 flex flex-col animate-fade-in">
       <div className="flex-1 relative">
         {!project.services || project.services.length === 0 ? (
-          /* Empty state */
-          <div className="h-full flex items-center justify-center p-8">
-            <div className="card max-w-2xl w-full text-center py-12 px-8">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary-100 flex items-center justify-center">
-                <svg className="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Add your first service
-              </h3>
-              <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                Services are the building blocks of your project. Add a web app, API, database, or worker to get started.
-              </p>
-              
-              <button
-                onClick={() => setIsAddServiceModalOpen(true)}
-                className="btn btn-primary btn-lg"
-              >
-                <svg className="w-5 h-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Service
-              </button>
+          /* Empty state with Quick Deploy */
+          <div className="h-full overflow-y-auto p-8">
+            <div className="max-w-3xl mx-auto">
+              {/* Quick Deploy Section */}
+              <QuickDeploySection 
+                projectId={id!} 
+                onSuccess={loadProject}
+                variant="full"
+              />
 
-              {/* Service types preview */}
-              <div className="mt-12 grid sm:grid-cols-3 gap-4 text-left">
-                {[
-                  { icon: '🌐', title: 'Web App', desc: 'Frontend or full-stack app' },
-                  { icon: '⚙️', title: 'API / Backend', desc: 'REST, GraphQL, or gRPC' },
-                  { icon: '🗄️', title: 'Database', desc: 'PostgreSQL, Redis, etc.' },
-                ].map((type, i) => (
-                  <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-gray-50">
-                    <span className="text-2xl">{type.icon}</span>
-                    <div>
-                      <div className="font-medium text-gray-900">{type.title}</div>
-                      <div className="text-sm text-gray-500">{type.desc}</div>
+              {/* Divider */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-gray-50 text-gray-400">or deploy your own code</span>
+                </div>
+              </div>
+
+              {/* Custom service options */}
+              <div className="card text-center py-10 px-8">
+                <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-primary-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Deploy from Git or Docker
+                </h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Connect your GitHub repository or deploy any Docker image
+                </p>
+                
+                <button
+                  onClick={() => setIsAddServiceModalOpen(true)}
+                  className="btn btn-primary"
+                >
+                  <svg className="w-5 h-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Custom Service
+                </button>
+
+                {/* Service types preview */}
+                <div className="mt-8 grid sm:grid-cols-2 gap-3 text-left">
+                  {[
+                    { icon: '🐙', title: 'GitHub Repository', desc: 'Auto-build & deploy on push' },
+                    { icon: '🐳', title: 'Docker Image', desc: 'Any public or private image' },
+                  ].map((type, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                      <span className="text-xl">{type.icon}</span>
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">{type.title}</div>
+                        <div className="text-xs text-gray-500">{type.desc}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
