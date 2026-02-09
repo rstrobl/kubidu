@@ -14,6 +14,10 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn(),
 }));
 
+// Mock global fetch for GitHub OAuth
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: jest.Mocked<PrismaService>;
@@ -644,6 +648,125 @@ describe('AuthService', () => {
       await service.register(registerDtoWithName);
 
       expect(prisma.workspace.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('loginWithGitHub', () => {
+    beforeEach(() => {
+      (mockFetch as jest.Mock).mockReset();
+    });
+
+    it('should login existing user via GitHub', async () => {
+      // Mock GitHub OAuth token exchange
+      (mockFetch as jest.Mock)
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ access_token: 'github-token' }),
+        })
+        // Mock GitHub user info
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({
+            id: 12345,
+            login: 'githubuser',
+            name: 'GitHub User',
+            email: 'test@example.com',
+            avatar_url: 'https://github.com/avatar.jpg',
+          }),
+        })
+        // Mock GitHub emails
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve([
+            { email: 'test@example.com', primary: true, verified: true },
+          ]),
+        });
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+
+      const result = await service.loginWithGitHub('valid-code');
+
+      expect(result.isNewUser).toBe(false);
+      expect(result.accessToken).toBeDefined();
+      expect(prisma.user.update).toHaveBeenCalled();
+    });
+
+    it('should register new user via GitHub', async () => {
+      (mockFetch as jest.Mock)
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ access_token: 'github-token' }),
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({
+            id: 12345,
+            login: 'newuser',
+            name: 'New GitHub User',
+            avatar_url: 'https://github.com/avatar.jpg',
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve([
+            { email: 'newuser@github.com', primary: true, verified: true },
+          ]),
+        });
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.workspace.findUnique as jest.Mock).mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('random-hash');
+
+      const newUser = {
+        id: 'new-user-id',
+        email: 'newuser@github.com',
+        name: 'New GitHub User',
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback: any) => {
+        const tx = {
+          user: {
+            create: jest.fn().mockResolvedValue(newUser),
+          },
+          workspace: {
+            create: jest.fn().mockResolvedValue({ id: 'workspace-123' }),
+          },
+        };
+        return callback(tx);
+      });
+
+      const result = await service.loginWithGitHub('valid-code');
+
+      expect(result.isNewUser).toBe(true);
+      expect(result.accessToken).toBeDefined();
+    });
+
+    it('should throw UnauthorizedException for GitHub OAuth error', async () => {
+      (mockFetch as jest.Mock).mockResolvedValueOnce({
+        json: () => Promise.resolve({
+          error: 'bad_verification_code',
+          error_description: 'The code passed is incorrect or expired.',
+        }),
+      });
+
+      await expect(
+        service.loginWithGitHub('invalid-code'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw BadRequestException when no email from GitHub', async () => {
+      (mockFetch as jest.Mock)
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ access_token: 'github-token' }),
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({
+            id: 12345,
+            login: 'noemailer',
+            name: 'No Email User',
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve([]), // No emails
+        });
+
+      await expect(
+        service.loginWithGitHub('valid-code'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
