@@ -496,6 +496,17 @@ describe('WorkspacesService', () => {
       expect(result.role).toBe('ADMIN');
     });
 
+    it('should throw ForbiddenException when role is not allowed', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue({
+        ...mockMembership,
+        role: 'DEPLOYER',
+      });
+
+      await expect(
+        service.checkWorkspaceAccess(mockUser.id, mockWorkspace.id, ['ADMIN']),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('should throw ForbiddenException for non-member', async () => {
       (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(null);
 
@@ -531,6 +542,195 @@ describe('WorkspacesService', () => {
       const result = await service.getUserRole(mockUser.id, mockWorkspace.id);
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('listInvitations', () => {
+    it('should list pending invitations for admin', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceInvitation.findMany as jest.Mock).mockResolvedValue([mockInvitation]);
+
+      const result = await service.listInvitations(mockUser.id, mockWorkspace.id);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].email).toBe(mockInvitation.email);
+    });
+
+    it('should throw ForbiddenException for non-admin', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue({
+        ...mockMembership,
+        role: 'MEMBER',
+      });
+
+      await expect(
+        service.listInvitations(mockUser.id, mockWorkspace.id),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('cancelInvitation', () => {
+    it('should cancel an invitation', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceInvitation.findUnique as jest.Mock).mockResolvedValue(mockInvitation);
+      (prisma.workspaceInvitation.delete as jest.Mock).mockResolvedValue(mockInvitation);
+
+      await service.cancelInvitation(mockUser.id, mockWorkspace.id, mockInvitation.id);
+
+      expect(prisma.workspaceInvitation.delete).toHaveBeenCalledWith({
+        where: { id: mockInvitation.id },
+      });
+    });
+
+    it('should throw NotFoundException when invitation not found', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceInvitation.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.cancelInvitation(mockUser.id, mockWorkspace.id, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when invitation belongs to different workspace', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceInvitation.findUnique as jest.Mock).mockResolvedValue({
+        ...mockInvitation,
+        workspaceId: 'other-workspace',
+      });
+
+      await expect(
+        service.cancelInvitation(mockUser.id, mockWorkspace.id, mockInvitation.id),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getAuditLogs', () => {
+    beforeEach(() => {
+      // Add mock for project and auditLog
+      (prisma as any).project = { findMany: jest.fn() };
+      (prisma as any).auditLog = { findMany: jest.fn() };
+    });
+
+    it('should return audit logs for workspace', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([{ id: 'project-123' }]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'log-1',
+          action: 'deployment.created',
+          resource: 'deployment',
+          userId: mockUser.id,
+          user: mockUser,
+        },
+      ]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {});
+
+      expect(result.logs).toHaveLength(1);
+    });
+
+    it('should filter by action', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {
+        action: 'deployment.created',
+      });
+
+      expect(result.logs).toBeDefined();
+    });
+
+    it('should filter by date range', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-02-01'),
+      });
+
+      expect(result.logs).toBeDefined();
+    });
+
+    it('should support pagination', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {
+        limit: 10,
+        offset: 20,
+      });
+
+      expect((prisma as any).auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 10,
+          skip: 20,
+        }),
+      );
+    });
+
+    it('should filter by resource', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {
+        resource: 'deployment',
+      });
+
+      expect(result.logs).toBeDefined();
+    });
+
+    it('should filter by userId', async () => {
+      ((prisma as any).project.findMany as jest.Mock).mockResolvedValue([]);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getAuditLogs(mockWorkspace.id, {
+        userId: mockUser.id,
+      });
+
+      expect(result.logs).toBeDefined();
+    });
+  });
+
+  describe('getTeamActivity', () => {
+    beforeEach(() => {
+      // Add mock for deployment and auditLog
+      (prisma as any).deployment = { count: jest.fn() };
+      (prisma as any).auditLog = { count: jest.fn(), findMany: jest.fn() };
+    });
+
+    it('should return team activity', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([
+        { ...mockMembership, user: mockUser },
+      ]);
+      ((prisma as any).deployment.count as jest.Mock).mockResolvedValue(5);
+      ((prisma as any).auditLog.count as jest.Mock).mockResolvedValue(10);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getTeamActivity(mockWorkspace.id);
+
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0].stats.deploymentsLast30Days).toBe(5);
+      expect(result.members[0].stats.actionsLast30Days).toBe(10);
+    });
+
+    it('should filter by userId', async () => {
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([
+        { ...mockMembership, user: mockUser },
+      ]);
+      ((prisma as any).deployment.count as jest.Mock).mockResolvedValue(3);
+      ((prisma as any).auditLog.count as jest.Mock).mockResolvedValue(8);
+      ((prisma as any).auditLog.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getTeamActivity(mockWorkspace.id, mockUser.id);
+
+      expect(prisma.workspaceMember.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: mockUser.id,
+          }),
+        }),
+      );
     });
   });
 });

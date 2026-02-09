@@ -353,4 +353,275 @@ describe('EnvironmentsService', () => {
       await expect(service.deleteReference('user-123', 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('setVariable with deployment scope', () => {
+    it('should create variable for deployment scope', async () => {
+      const mockDeployment = {
+        id: 'deployment-123',
+        service: mockService,
+      };
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.environmentVariable.create as jest.Mock).mockResolvedValue({
+        ...mockEnvVar,
+        deploymentId: 'deployment-123',
+        serviceId: null,
+      });
+
+      const result = await service.setVariable('user-123', {
+        deploymentId: 'deployment-123',
+        key: 'DEPLOY_VAR',
+        value: 'test-value',
+      });
+
+      expect(prisma.environmentVariable.create).toHaveBeenCalled();
+      expect(prisma.deployment.findUnique).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when deployment not found', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.setVariable('user-123', {
+          deploymentId: 'nonexistent',
+          key: 'TEST_KEY',
+          value: 'test',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('setVariable with auto-deploy', () => {
+    it('should trigger deployment when service has autoDeploy enabled', async () => {
+      const autoDeployService = {
+        ...mockService,
+        autoDeploy: true,
+        defaultPort: 3000,
+        defaultReplicas: 1,
+        defaultCpuLimit: '500m',
+        defaultMemoryLimit: '512Mi',
+        defaultCpuRequest: '100m',
+        defaultMemoryRequest: '128Mi',
+        defaultHealthCheckPath: '/health',
+      };
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(autoDeployService);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.environmentVariable.create as jest.Mock).mockResolvedValue(mockEnvVar);
+      (deploymentsService.create as jest.Mock).mockResolvedValue({});
+
+      await service.setVariable('user-123', {
+        serviceId: 'service-123',
+        key: 'NEW_VAR',
+        value: 'test-value',
+      });
+
+      expect(deploymentsService.create).toHaveBeenCalledWith('user-123', expect.objectContaining({
+        serviceId: 'service-123',
+      }));
+    });
+
+    it('should handle deployment trigger failure gracefully', async () => {
+      const autoDeployService = {
+        ...mockService,
+        autoDeploy: true,
+      };
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(autoDeployService);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.environmentVariable.create as jest.Mock).mockResolvedValue(mockEnvVar);
+      (deploymentsService.create as jest.Mock).mockRejectedValue(new Error('Deploy failed'));
+
+      // Should not throw
+      await expect(service.setVariable('user-123', {
+        serviceId: 'service-123',
+        key: 'NEW_VAR',
+        value: 'test-value',
+      })).resolves.not.toThrow();
+    });
+  });
+
+  describe('setVariable with inline references', () => {
+    it('should sync references from ${{ServiceName.VAR}} syntax', async () => {
+      const sourceService = {
+        id: 'source-123',
+        name: 'database',
+        projectId: 'project-123',
+      };
+      (prisma.service.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ ...mockService, projectId: 'project-123' })
+        .mockResolvedValueOnce({ ...mockService, projectId: 'project-123' });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.findFirst as jest.Mock)
+        .mockResolvedValueOnce(null) // for setVariable check
+        .mockResolvedValueOnce({ key: 'DATABASE_URL', isShared: true }); // for syncReferences check
+      (prisma.environmentVariable.create as jest.Mock).mockResolvedValue(mockEnvVar);
+      (prisma.service.findMany as jest.Mock).mockResolvedValue([mockService, sourceService]);
+      (prisma.envVarReference.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.envVarReference.create as jest.Mock).mockResolvedValue({});
+
+      await service.setVariable('user-123', {
+        serviceId: 'service-123',
+        key: 'CONNECTION_STRING',
+        value: 'postgres://${{database.DATABASE_URL}}/db',
+      });
+
+      expect(prisma.envVarReference.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteVariable with deployment scope', () => {
+    it('should delete variable scoped to deployment', async () => {
+      const mockDeployment = {
+        id: 'deployment-123',
+        service: mockService,
+      };
+      (prisma.environmentVariable.findUnique as jest.Mock).mockResolvedValue({
+        ...mockEnvVar,
+        serviceId: null,
+        deploymentId: 'deployment-123',
+      });
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.delete as jest.Mock).mockResolvedValue({});
+
+      await service.deleteVariable('user-123', 'envvar-123');
+
+      expect(prisma.environmentVariable.delete).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException when variable has no scope', async () => {
+      (prisma.environmentVariable.findUnique as jest.Mock).mockResolvedValue({
+        ...mockEnvVar,
+        serviceId: null,
+        deploymentId: null,
+      });
+
+      await expect(service.deleteVariable('user-123', 'envvar-123')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should trigger auto-deploy after deletion', async () => {
+      const autoDeployService = {
+        ...mockService,
+        autoDeploy: true,
+      };
+      (prisma.environmentVariable.findUnique as jest.Mock).mockResolvedValue(mockEnvVar);
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(autoDeployService);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.delete as jest.Mock).mockResolvedValue({});
+      (deploymentsService.create as jest.Mock).mockResolvedValue({});
+
+      await service.deleteVariable('user-123', 'envvar-123');
+
+      expect(deploymentsService.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('getSharedVariables edge cases', () => {
+    it('should exclude specified service', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue({ id: 'project-123', workspaceId: 'workspace-123' });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.service.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getSharedVariables('user-123', 'project-123', 'exclude-service-id');
+
+      expect(prisma.service.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          id: { not: 'exclude-service-id' },
+        }),
+      }));
+    });
+
+    it('should mask secret values', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue({ id: 'project-123', workspaceId: 'workspace-123' });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.service.findMany as jest.Mock).mockResolvedValue([{
+        id: 'service-1',
+        name: 'Service 1',
+        environmentVariables: [{
+          key: 'SECRET_VAR',
+          isSecret: true,
+          isSystem: false,
+          isShared: true,
+          valueEncrypted: 'enc',
+          valueIv: 'iv:tag',
+        }],
+      }]);
+
+      const result = await service.getSharedVariables('user-123', 'project-123');
+
+      expect(result[0].variables[0].value).toBe('***');
+    });
+
+    it('should handle decryption failure gracefully', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue({ id: 'project-123', workspaceId: 'workspace-123' });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.service.findMany as jest.Mock).mockResolvedValue([{
+        id: 'service-1',
+        name: 'Service 1',
+        environmentVariables: [{
+          key: 'BROKEN_VAR',
+          isSecret: false,
+          isSystem: false,
+          isShared: true,
+          valueEncrypted: 'bad-data',
+          valueIv: 'invalid-format',
+        }],
+      }]);
+      (encryptionService.decrypt as jest.Mock).mockImplementation(() => { throw new Error('Decrypt failed'); });
+
+      const result = await service.getSharedVariables('user-123', 'project-123');
+
+      expect(result[0].variables[0].value).toBeUndefined();
+    });
+  });
+
+  describe('createReference edge cases', () => {
+    it('should throw NotFoundException when source service not found', async () => {
+      (prisma.service.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ ...mockService, projectId: 'project-123' })
+        .mockResolvedValueOnce(null);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+
+      await expect(
+        service.createReference('user-123', {
+          serviceId: 'service-123',
+          sourceServiceId: 'nonexistent',
+          key: 'TEST_KEY',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when services in different projects', async () => {
+      (prisma.service.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ ...mockService, projectId: 'project-123' })
+        .mockResolvedValueOnce({ ...mockService, id: 'other-123', projectId: 'other-project' });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+
+      await expect(
+        service.createReference('user-123', {
+          serviceId: 'service-123',
+          sourceServiceId: 'other-123',
+          key: 'TEST_KEY',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when variable not found or not shared', async () => {
+      (prisma.service.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ ...mockService, projectId: 'project-123' })
+        .mockResolvedValueOnce({ ...mockService, id: 'source-123', projectId: 'project-123', project: { workspaceId: 'workspace-123' } });
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.createReference('user-123', {
+          serviceId: 'service-123',
+          sourceServiceId: 'source-123',
+          key: 'PRIVATE_VAR',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });

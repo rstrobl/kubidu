@@ -193,5 +193,267 @@ describe('WebhooksService', () => {
         }),
       );
     });
+
+    it('should build Discord-formatted payload for Discord webhooks', async () => {
+      const discordWebhook = { ...mockWebhook, type: 'DISCORD' };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(discordWebhook, 'deployment.success', mockPayload);
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        discordWebhook.url,
+        expect.objectContaining({
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              title: expect.stringContaining('Deployment succeeded'),
+              color: expect.any(Number),
+            }),
+          ]),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should build Slack-formatted payload for Slack webhooks', async () => {
+      const slackWebhook = { ...mockWebhook, type: 'SLACK' };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(slackWebhook, 'deployment.success', mockPayload);
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        slackWebhook.url,
+        expect.objectContaining({
+          attachments: expect.arrayContaining([
+            expect.objectContaining({
+              color: expect.any(String),
+              blocks: expect.any(Array),
+            }),
+          ]),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should handle delivery failure and log error', async () => {
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 500, data: 'Internal Server Error' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await expect(
+        service.deliver(mockWebhook, 'deployment.failed', mockPayload),
+      ).rejects.toThrow();
+    });
+
+    it('should include commit info in Discord embed fields', async () => {
+      const discordWebhook = { ...mockWebhook, type: 'DISCORD' };
+      const payloadWithCommit: WebhookPayload = {
+        ...mockPayload,
+        deployment: {
+          ...mockPayload.deployment!,
+          gitCommitSha: 'abc123def456',
+          gitCommitMessage: 'Fix bug',
+        },
+      };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(discordWebhook, 'deployment.success', payloadWithCommit);
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        discordWebhook.url,
+        expect.objectContaining({
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              fields: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'Commit',
+                  value: expect.stringContaining('abc123d'),
+                }),
+              ]),
+            }),
+          ]),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should include service info in Slack blocks', async () => {
+      const slackWebhook = { ...mockWebhook, type: 'SLACK' };
+      const payloadWithService: WebhookPayload = {
+        ...mockPayload,
+        service: {
+          id: 'service-123',
+          name: 'API Service',
+          type: 'GITHUB',
+        },
+      };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(slackWebhook, 'service.created', payloadWithService);
+
+      expect(httpService.post).toHaveBeenCalled();
+    });
+
+    it('should include View Deployment button in Slack when URL provided', async () => {
+      const slackWebhook = { ...mockWebhook, type: 'SLACK' };
+      const payloadWithUrl: WebhookPayload = {
+        ...mockPayload,
+        deployment: {
+          ...mockPayload.deployment!,
+          url: 'https://app.kubidu.dev/deployment/123',
+        },
+      };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(slackWebhook, 'deployment.success', payloadWithUrl);
+
+      expect(httpService.post).toHaveBeenCalled();
+    });
+
+    it('should handle actor information in Discord embed', async () => {
+      const discordWebhook = { ...mockWebhook, type: 'DISCORD' };
+      const payloadWithActor: WebhookPayload = {
+        ...mockPayload,
+        actor: {
+          id: 'user-123',
+          name: 'John Doe',
+          email: 'john@example.com',
+        },
+      };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(discordWebhook, 'deployment.started', payloadWithActor);
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        discordWebhook.url,
+        expect.objectContaining({
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              fields: expect.arrayContaining([
+                expect.objectContaining({
+                  name: 'Triggered by',
+                  value: 'John Doe',
+                }),
+              ]),
+            }),
+          ]),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should format different event types correctly', async () => {
+      const discordWebhook = { ...mockWebhook, type: 'DISCORD' };
+      const events = [
+        'deployment.failed',
+        'deployment.started',
+        'deployment.stopped',
+        'build.success',
+        'build.failed',
+        'build.started',
+        'service.created',
+        'service.deleted',
+        'domain.verified',
+        'domain.added',
+        'domain.removed',
+        'service.updated',
+      ];
+
+      for (const event of events) {
+        jest.clearAllMocks();
+        (httpService.post as jest.Mock).mockReturnValue(
+          of({ status: 200, data: 'OK' }),
+        );
+        (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+        (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+        await service.deliver(discordWebhook, event, mockPayload);
+
+        expect(httpService.post).toHaveBeenCalled();
+      }
+    });
+
+    it('should use default color and icon for unknown events', async () => {
+      const discordWebhook = { ...mockWebhook, type: 'DISCORD' };
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      await service.deliver(discordWebhook, 'unknown.event', mockPayload);
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        discordWebhook.url,
+        expect.objectContaining({
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              title: expect.stringContaining('📦'),
+              color: 0x6b7280,
+            }),
+          ]),
+        }),
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('test', () => {
+    it('should send test webhook delivery', async () => {
+      const webhookWithProject = {
+        ...mockWebhook,
+        project: {
+          id: 'project-123',
+          name: 'Test Project',
+          slug: 'test-project',
+        },
+      };
+      (prisma.webhook.findUnique as jest.Mock).mockResolvedValue(webhookWithProject);
+      (httpService.post as jest.Mock).mockReturnValue(
+        of({ status: 200, data: 'OK' }),
+      );
+      (prisma.webhookDelivery.create as jest.Mock).mockResolvedValue({});
+      (prisma.webhook.update as jest.Mock).mockResolvedValue({});
+
+      const result = await service.test('webhook-123');
+
+      expect(result).toBeDefined();
+      expect(prisma.webhook.findUnique).toHaveBeenCalledWith({
+        where: { id: 'webhook-123' },
+        include: { project: true },
+      });
+      expect(httpService.post).toHaveBeenCalled();
+    });
+
+    it('should throw error when webhook not found', async () => {
+      (prisma.webhook.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.test('non-existent')).rejects.toThrow('Webhook not found');
+    });
   });
 });

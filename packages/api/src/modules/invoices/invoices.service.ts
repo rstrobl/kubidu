@@ -157,7 +157,7 @@ export class InvoicesService {
 
   private formatGermanDate(date: Date): string {
     const months = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+      'Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
     ];
     return `${date.getDate()}. ${months[date.getMonth()]} ${date.getFullYear()}`;
@@ -220,7 +220,7 @@ export class InvoicesService {
     // Company Info
     page.drawText('Kubidu GmbH', { x: margin, y, size: 10, font: helveticaBold, color: black });
     y -= 14;
-    page.drawText('Musterstraße 1, 60313 Frankfurt', { x: margin, y, size: 9, font: helvetica, color: gray });
+    page.drawText('Musterstrasse 1, 60313 Frankfurt', { x: margin, y, size: 9, font: helvetica, color: gray });
     y -= 12;
     page.drawText('Deutschland', { x: margin, y, size: 9, font: helvetica, color: gray });
     y -= 12;
@@ -231,7 +231,7 @@ export class InvoicesService {
     page.drawText('RECHNUNG', { x: rightX, y: height - 140, size: 24, font: helveticaBold, color: black });
     page.drawText(`Nr.: ${invoice.number}`, { x: rightX, y: height - 165, size: 10, font: helvetica, color: gray });
     page.drawText(`Datum: ${invoice.date}`, { x: rightX, y: height - 180, size: 10, font: helvetica, color: gray });
-    page.drawText(`Fällig: ${invoice.dueDate}`, { x: rightX, y: height - 195, size: 10, font: helvetica, color: gray });
+    page.drawText(`Faellig: ${invoice.dueDate}`, { x: rightX, y: height - 195, size: 10, font: helvetica, color: gray });
 
     // Status Badge
     const statusColors = {
@@ -369,7 +369,7 @@ export class InvoicesService {
       borderColor: green,
       borderWidth: 1,
     });
-    page.drawText('🌱 Klimaneutrale Rechnung', {
+    page.drawText('[ECO] Klimaneutrale Rechnung', {
       x: margin + 15,
       y: y - 20,
       size: 12,
@@ -383,7 +383,7 @@ export class InvoicesService {
       font: helvetica,
       color: gray,
     });
-    page.drawText(`CO₂-Einsparung: ${invoice.co2Saved} kg gegenüber herkömmlichem Hosting`, {
+    page.drawText(`CO2-Einsparung: ${invoice.co2Saved} kg gegenueber herkoemmlichem Hosting`, {
       x: margin + 15,
       y: y - 52,
       size: 10,

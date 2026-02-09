@@ -533,5 +533,192 @@ describe('ServicesService', () => {
         ]),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('should handle notification failure gracefully', async () => {
+      const serviceIds = ['service-1'];
+      const services = serviceIds.map((id) => ({ id, name: `Service ${id}` }));
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findMany as jest.Mock).mockResolvedValue(services);
+      (prisma.service.deleteMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (notificationsService.notifyServiceEvent as jest.Mock).mockRejectedValue(new Error('Notification failed'));
+
+      const result = await service.removeMany(
+        mockUser.id,
+        mockProject.id,
+        serviceIds,
+      );
+
+      expect(result.deleted).toBe(1);
+    });
+  });
+
+  describe('GitHub service creation', () => {
+    const githubDto = {
+      name: 'GithubService',
+      serviceType: ServiceType.GITHUB,
+      githubInstallationId: 'installation-123',
+      githubRepoFullName: 'owner/repo',
+    };
+
+    it('should create GitHub service and trigger auto-deploy', async () => {
+      const gitHubAppService = {
+        getLatestCommit: jest.fn().mockResolvedValue({
+          sha: 'abc123',
+          message: 'Initial commit',
+          author: 'Developer',
+        }),
+      };
+      const githubService = {
+        ...mockService,
+        serviceType: 'GITHUB',
+        repositoryBranch: 'main',
+      };
+
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.service.create as jest.Mock).mockResolvedValue(githubService);
+      (prisma.gitHubInstallation.findUnique as jest.Mock).mockResolvedValue({
+        id: 'installation-123',
+        installationId: 12345,
+      });
+      (prisma.deployment.create as jest.Mock).mockResolvedValue({ id: 'deploy-123' });
+      (prisma.buildQueue.create as jest.Mock).mockResolvedValue({ id: 'build-123' });
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+
+      // Need to mock the GitHubAppService on the module level
+      const testModule = await Test.createTestingModule({
+        providers: [
+          ServicesService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: getQueueToken('build'), useValue: buildQueue },
+          { provide: getQueueToken('deploy'), useValue: { add: jest.fn() } },
+          { provide: DeploymentsService, useValue: deploymentsService },
+          { provide: NotificationsService, useValue: notificationsService },
+          { provide: EncryptionService, useValue: encryptionService },
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('http://localhost') } },
+          { provide: DockerInspectorService, useValue: dockerInspector },
+          { provide: GitHubAppService, useValue: gitHubAppService },
+        ],
+      }).compile();
+
+      const svc = testModule.get<ServicesService>(ServicesService);
+      const result = await svc.create(mockUser.id, mockProject.id, githubDto);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('subdomain generation', () => {
+    const createDto = {
+      name: 'API Service',
+      serviceType: ServiceType.DOCKER_IMAGE,
+      dockerImage: 'nginx',
+      subdomain: undefined,
+    };
+
+    it('should generate unique subdomain when not provided', async () => {
+      const projectWithSlug = { ...mockProject, slug: 'my-project' };
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(projectWithSlug);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock)
+        .mockResolvedValueOnce(null) // check for existing service with same name
+        .mockResolvedValueOnce(null); // check for existing subdomain
+      (prisma.service.create as jest.Mock).mockResolvedValue({
+        ...mockService,
+        subdomain: 'api-service-my-project',
+      });
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.create(mockUser.id, mockProject.id, createDto);
+
+      expect(prisma.service.create).toHaveBeenCalled();
+    });
+
+    it('should handle subdomain collision with random suffix', async () => {
+      const projectWithSlug = { ...mockProject, slug: 'my-project' };
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(projectWithSlug);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock)
+        .mockResolvedValueOnce(null) // check for existing service with same name
+        .mockResolvedValueOnce({ id: 'other', subdomain: 'taken' }) // first subdomain taken
+        .mockResolvedValueOnce(null); // second attempt free
+      (prisma.service.create as jest.Mock).mockResolvedValue(mockService);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await service.create(mockUser.id, mockProject.id, createDto);
+
+      expect(prisma.service.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('system environment variables', () => {
+    const createDto = {
+      name: 'TestService',
+      serviceType: ServiceType.DOCKER_IMAGE,
+      dockerImage: 'nginx',
+    };
+
+    it('should update existing system env var instead of creating new', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.service.create as jest.Mock).mockResolvedValue(mockService);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue({
+        id: 'existing-var',
+        key: 'KUBIDU_SERVICE_ID',
+      });
+      (prisma.environmentVariable.update as jest.Mock).mockResolvedValue({});
+
+      await service.create(mockUser.id, mockProject.id, createDto);
+
+      expect(prisma.environmentVariable.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle deployment failure gracefully during create', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.service.create as jest.Mock).mockResolvedValue(mockService);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+      (deploymentsService.create as jest.Mock).mockRejectedValue(new Error('Deploy failed'));
+
+      // Should not throw - just log the error
+      const result = await service.create(mockUser.id, mockProject.id, {
+        name: 'TestService',
+        serviceType: ServiceType.DOCKER_IMAGE,
+        dockerImage: 'nginx',
+      });
+
+      expect(result).toBeDefined();
+    });
+
+    it('should handle notification failure gracefully during create', async () => {
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue(mockProject);
+      (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([mockMembership]);
+      (prisma.service.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.service.create as jest.Mock).mockResolvedValue(mockService);
+      (prisma.environmentVariable.findFirst as jest.Mock).mockResolvedValue(null);
+      (notificationsService.notifyServiceEvent as jest.Mock).mockRejectedValue(new Error('Notify failed'));
+
+      const result = await service.create(mockUser.id, mockProject.id, {
+        name: 'TestService',
+        serviceType: ServiceType.DOCKER_IMAGE,
+        dockerImage: 'nginx',
+      });
+
+      expect(result).toBeDefined();
+    });
   });
 });

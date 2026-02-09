@@ -151,8 +151,6 @@ describe('InvoicesService', () => {
   });
 
   describe('generatePdf', () => {
-    // PDF generation uses emojis which the standard fonts can't encode
-    // This is a known limitation - testing via integration tests is better
     it('should call findOne before generating PDF', async () => {
       (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
 
@@ -164,6 +162,76 @@ describe('InvoicesService', () => {
         where: { id: 'non-existent' },
         include: expect.any(Object),
       });
+    });
+
+    it('should generate a PDF buffer for paid invoice', async () => {
+      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
+
+      const result = await service.generatePdf('user-123', 'invoice-123');
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+      // PDF magic bytes
+      expect(result.slice(0, 5).toString()).toBe('%PDF-');
+    });
+
+    it('should generate PDF for pending invoice', async () => {
+      const pendingInvoice = {
+        ...mockInvoice,
+        status: 'pending',
+        paidAt: null,
+        dueDate: new Date('2030-12-31'), // Future due date
+      };
+      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(pendingInvoice);
+
+      const result = await service.generatePdf('user-123', 'invoice-123');
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should generate PDF for overdue invoice', async () => {
+      const overdueInvoice = {
+        ...mockInvoice,
+        status: 'pending',
+        paidAt: null,
+        dueDate: new Date('2020-01-01'), // Past due date
+      };
+      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(overdueInvoice);
+
+      const result = await service.generatePdf('user-123', 'invoice-123');
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should handle different currencies in PDF', async () => {
+      const usdInvoice = {
+        ...mockInvoice,
+        currency: 'usd',
+        amount: 99.99,
+      };
+      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(usdInvoice);
+
+      const result = await service.generatePdf('user-123', 'invoice-123');
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should handle invoice without user name', async () => {
+      const invoiceNoUserName = {
+        ...mockInvoice,
+        workspace: {
+          ...mockWorkspace,
+          members: [{ userId: 'user-123', user: { id: 'user-123', email: 'test@example.com', name: null } }],
+        },
+      };
+      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(invoiceNoUserName);
+
+      const result = await service.generatePdf('user-123', 'invoice-123');
+
+      expect(result).toBeInstanceOf(Buffer);
     });
   });
 
