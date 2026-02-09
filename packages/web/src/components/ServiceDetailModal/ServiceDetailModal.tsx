@@ -537,17 +537,17 @@ export function ServiceDetailModal({
 
       {/* Modal */}
       <div className="flex min-h-full items-start justify-center p-4 pt-20">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               {service && (
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                   <ServiceIcon service={service} />
                 </div>
               )}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 leading-tight">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
                   {service?.name || 'Service Detail'}
                 </h2>
                 {service && (
@@ -568,7 +568,7 @@ export function ServiceDetailModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 p-1 rounded-md hover:bg-gray-100 transition-colors"
+              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -577,7 +577,7 @@ export function ServiceDetailModal({
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 px-6 bg-white">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-6 bg-white dark:bg-gray-800">
             <nav className="-mb-px flex space-x-8">
               {(['overview', 'deployments', 'env', 'domains', 'autoscaling', 'settings'] as const).map((tab) => (
                 <button
