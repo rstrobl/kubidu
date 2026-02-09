@@ -26,7 +26,7 @@ export interface Service {
   autoscalingTargetMemory?: number;
 }
 
-export type TabType = 'overview' | 'settings' | 'env' | 'domains' | 'deployments' | 'autoscaling';
+export type TabType = 'overview' | 'settings' | 'env' | 'domains' | 'deployments' | 'autoscaling' | 'volumes';
 
 export interface Deployment {
   id: string;

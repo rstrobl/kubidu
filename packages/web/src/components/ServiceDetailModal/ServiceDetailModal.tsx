@@ -7,6 +7,7 @@ import { EnvVarsTab } from './EnvVarsTab';
 import { DomainsTab } from './DomainsTab';
 import { SettingsTab } from './SettingsTab';
 import { AutoscalingTab } from './AutoscalingTab';
+import { VolumesTab } from './VolumesTab';
 import { ServiceIcon } from './ServiceIcon';
 
 interface ServiceDetailModalProps {
@@ -579,7 +580,7 @@ export function ServiceDetailModal({
           {/* Tabs */}
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-hide px-6">
-              {(['overview', 'deployments', 'env', 'domains', 'autoscaling', 'settings'] as const).map((tab) => (
+              {(['overview', 'deployments', 'env', 'domains', 'volumes', 'autoscaling', 'settings'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -690,6 +691,14 @@ export function ServiceDetailModal({
                     onSubdomainInputChange={setSubdomainInput}
                     onSaveSubdomain={handleSaveSubdomain}
                     onCopySubdomain={handleCopySubdomain}
+                  />
+                )}
+
+                {activeTab === 'volumes' && service && (
+                  <VolumesTab
+                    projectId={projectId}
+                    serviceId={serviceId}
+                    serviceName={service.name}
                   />
                 )}
 

@@ -502,6 +502,41 @@ class ApiService {
     return response.data;
   }
 
+  async createVolume(projectId: string, data: {
+    name: string;
+    size: '1Gi' | '5Gi' | '10Gi' | '20Gi' | '50Gi';
+    mountPath?: string;
+  }) {
+    const response = await this.client.post(`/projects/${projectId}/volumes`, data);
+    return response.data;
+  }
+
+  async updateVolume(projectId: string, volumeId: string, data: {
+    name?: string;
+    size?: '1Gi' | '5Gi' | '10Gi' | '20Gi' | '50Gi';
+  }) {
+    const response = await this.client.patch(`/projects/${projectId}/volumes/${volumeId}`, data);
+    return response.data;
+  }
+
+  async deleteVolume(projectId: string, volumeId: string) {
+    const response = await this.client.delete(`/projects/${projectId}/volumes/${volumeId}`);
+    return response.data;
+  }
+
+  async attachVolume(projectId: string, volumeId: string, data: {
+    serviceId: string;
+    mountPath: string;
+  }) {
+    const response = await this.client.post(`/projects/${projectId}/volumes/${volumeId}/attach`, data);
+    return response.data;
+  }
+
+  async detachVolume(projectId: string, volumeId: string) {
+    const response = await this.client.post(`/projects/${projectId}/volumes/${volumeId}/detach`);
+    return response.data;
+  }
+
   // Notification endpoints
   async getNotifications(options: { limit?: number; offset?: number; unreadOnly?: boolean } = {}) {
     const params = new URLSearchParams();
