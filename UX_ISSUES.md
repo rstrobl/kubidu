@@ -168,33 +168,45 @@ Templates now sorted by user-friendliness:
 
 ## Recommended Priority Fixes
 
-### High Priority 🔴
-1. **Simplify landing page language**
-   - "Deploy Docker image" → "Launch your app"
-   - "Environment variables" → "App settings"
-   - Add alternative non-code hero section
+### High Priority 🔴 - ✅ ALL DONE
+1. **Simplify landing page language** ✅ DONE (2026-02-09)
+   - Added "Simple Mode" toggle for non-tech users
+   - Hero: "Your website. Online in minutes."
+   - Benefits-focused features instead of tech specs
+   - Website preview mockup instead of terminal
+   - Template showcase for non-tech users
 
-2. **Add Audit Log UI**
-   - Currently only available via API
-   - DevOps users expect dashboard access
+2. **Add Audit Log UI** ✅ ALREADY EXISTS
+   - Full UI at `/audit` with filters and CSV export
+   - Accessible via user menu
 
-### Medium Priority 🟡
-3. **Add tooltips everywhere**
-   - CPU/RAM limits explanation
-   - What's a "replica"?
+### Medium Priority 🟡 - ✅ ALL DONE
+3. **Add tooltips everywhere** ✅ DONE (2026-02-09)
+   - CPU/RAM limits with explanations ("1000m = 1 CPU core", "512Mi = 512 Megabytes")
+   - Replicas explanation
    - Port explanation
+   - Health check explanation
 
-4. **Add Webhooks UI**
-   - API exists but no dashboard management
+4. **Add Webhooks UI** ✅ DONE (2026-02-09)
+   - Full UI exists in WebhookSettings component
+   - Now integrated into Project Settings modal
 
-5. **Improve error messages**
+5. **Improve error messages** 🔄 PENDING
    - Make them actionable
    - Add "What can I do?" suggestions
 
 ### Low Priority 🟢
-6. **Video tutorials**
-7. **Interactive product tour / onboarding wizard**
-8. **Template search/filter by use case**
+6. **Video tutorials** 🔄 PENDING
+7. **Interactive product tour / onboarding wizard** ✅ DONE (2026-02-09)
+   - Auto-triggers for new users on registration
+   - Asks user type (website vs developer)
+   - Shows relevant templates based on preference
+8. **Template search/filter by use case** 🔄 PENDING
+
+### Additional Improvements (2026-02-09)
+- ✅ **Dark Mode Polish**: Added dark mode variants to all CSS component classes
+- ✅ **Navigation Dark Mode**: Navbar, dropdowns, modals all support dark mode
+- ✅ **Onboarding Flow**: User type preference saved for landing page mode
 
 ---
 
