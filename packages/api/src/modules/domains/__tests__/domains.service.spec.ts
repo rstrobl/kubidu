@@ -5,9 +5,13 @@ import { PrismaService } from '../../../database/prisma.service';
 import { AuthorizationService } from '../../../services/authorization.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 
+// Mock dns module
+const mockResolveTxt = jest.fn();
+const mockResolveCname = jest.fn();
+
 jest.mock('dns', () => ({
-  resolveTxt: jest.fn(),
-  resolveCname: jest.fn(),
+  resolveTxt: (...args: any[]) => mockResolveTxt(...args),
+  resolveCname: (...args: any[]) => mockResolveCname(...args),
 }));
 
 describe('DomainsService', () => {
@@ -144,6 +148,154 @@ describe('DomainsService', () => {
       (prisma.domain.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.delete('user-123', 'nonexistent')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('verify', () => {
+    it('should return domain if already verified', async () => {
+      const verifiedDomain = { ...mockDomain, isVerified: true };
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(verifiedDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await service.verify('user-123', 'domain-123');
+
+      expect(result.isVerified).toBe(true);
+      expect(prisma.domain.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when domain not found', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.verify('user-123', 'nonexistent')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should verify domain via TXT record', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(null, [['kubidu-verification=abc123']]);
+      });
+      (prisma.domain.update as jest.Mock).mockResolvedValue({ ...mockDomain, isVerified: true });
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-123' }]);
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue({ name: 'Test Project' });
+
+      const result = await service.verify('user-123', 'domain-123');
+
+      expect(result.isVerified).toBe(true);
+      expect(prisma.domain.update).toHaveBeenCalledWith({
+        where: { id: 'domain-123' },
+        data: {
+          isVerified: true,
+          verifiedAt: expect.any(Date),
+        },
+      });
+    });
+
+    it('should verify domain via CNAME record when TXT fails', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      
+      // TXT record fails
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+      
+      // CNAME record succeeds
+      mockResolveCname.mockImplementation((domain, callback) => {
+        callback(null, ['test-service.kubidu.io']);
+      });
+      
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue({
+        url: 'https://test-service.kubidu.io',
+      });
+      (prisma.domain.update as jest.Mock).mockResolvedValue({ ...mockDomain, isVerified: true });
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-123' }]);
+      (prisma.project.findUnique as jest.Mock).mockResolvedValue({ name: 'Test Project' });
+
+      const result = await service.verify('user-123', 'domain-123');
+
+      expect(result.isVerified).toBe(true);
+    });
+
+    it('should throw BadRequestException when verification fails', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      
+      // Both DNS lookups fail
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+      mockResolveCname.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+
+      await expect(service.verify('user-123', 'domain-123')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when TXT record does not match', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      
+      // TXT record exists but doesn't match
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(null, [['some-other-value']]);
+      });
+      mockResolveCname.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+
+      await expect(service.verify('user-123', 'domain-123')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle CNAME not matching expected value', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+      mockResolveCname.mockImplementation((domain, callback) => {
+        callback(null, ['wrong-target.example.com']);
+      });
+      
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue({
+        url: 'https://test-service.kubidu.io',
+      });
+
+      await expect(service.verify('user-123', 'domain-123')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle service without URL during CNAME verification', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(new Error('DNS lookup failed'), null);
+      });
+      mockResolveCname.mockImplementation((domain, callback) => {
+        callback(null, ['some-cname.example.com']);
+      });
+      
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue({
+        url: null,
+      });
+
+      await expect(service.verify('user-123', 'domain-123')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle notification failure gracefully', async () => {
+      (prisma.domain.findUnique as jest.Mock).mockResolvedValue(mockDomain);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
+      mockResolveTxt.mockImplementation((domain, callback) => {
+        callback(null, [['kubidu-verification=abc123']]);
+      });
+      (prisma.domain.update as jest.Mock).mockResolvedValue({ ...mockDomain, isVerified: true });
+      (prisma.workspaceMember.findMany as jest.Mock).mockResolvedValue([]);
+
+      // Should not throw even when no members to notify
+      const result = await service.verify('user-123', 'domain-123');
+
+      expect(result.isVerified).toBe(true);
     });
   });
 });
