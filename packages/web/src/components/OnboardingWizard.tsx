@@ -14,27 +14,27 @@ interface OnboardingStep {
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to Kubidu! 🌱',
-    description: 'The green cloud platform for European businesses. Deploy with confidence, stay compliant.',
+    title: 'Hey! 👋',
+    description: 'Let\'s get your first thing deployed. Takes about 5 minutes, tops.',
     icon: <WelcomeIcon />,
   },
   {
     id: 'project',
-    title: 'Create Your First Project',
-    description: 'Projects are containers for your services. Think of them as folders for related apps.',
+    title: 'Make a project',
+    description: 'A project is like a folder. Put related stuff together. You can rename it later, don\'t overthink it.',
     icon: <ProjectIcon />,
     action: 'Create Project',
   },
   {
     id: 'service',
-    title: 'Add Your First Service',
-    description: 'Connect a GitHub repo or deploy a Docker image. We handle the rest.',
+    title: 'Add something to deploy',
+    description: 'Got a Docker image? GitHub repo? Drop it in. We\'ll figure out the rest.',
     icon: <ServiceIcon />,
   },
   {
     id: 'deploy',
-    title: 'Deploy & Go Live',
-    description: 'One click to deploy. Get a URL instantly. Auto-HTTPS included.',
+    title: 'Hit deploy',
+    description: 'Click the button, get a URL. HTTPS just works. That\'s literally it.',
     icon: <DeployIcon />,
   },
 ];
@@ -111,6 +111,24 @@ export function OnboardingWizard() {
     }
   }, []);
 
+  // Keyboard navigation - Enter to continue, Escape to skip
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleSkip();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, currentStep]);
+
   const handleNext = () => {
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -157,7 +175,7 @@ export function OnboardingWizard() {
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[100]" onClose={() => {}}>
+      <Dialog as="div" className="relative z-[100]" onClose={handleSkip}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"

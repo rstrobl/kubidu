@@ -4,7 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 // Pricing tiers (per month)
 const PRICING = {
   FREE: {
-    name: 'Free',
+    name: 'Hobby',
     basePrice: 0,
     includedServices: 2,
     includedDeployments: 10,

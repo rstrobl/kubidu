@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api.service';
 import { useWorkspaceStore } from '../stores/workspace.store';
 import { CostCalculator } from '../components/CostCalculator';
@@ -86,6 +87,7 @@ const PLANS = [
 type TabType = 'overview' | 'invoices' | 'plans';
 
 export function Billing() {
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspaceStore();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -119,7 +121,7 @@ export function Billing() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Zurück zur Übersicht
+          {t('billing.backToOverview')}
         </button>
         <InvoiceView invoice={selectedInvoice} />
       </div>
@@ -133,10 +135,10 @@ export function Billing() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
             <span className="text-3xl">📋</span>
-            Abrechnung & Kosten
+            {t('billing.title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Ihre Rechnungen, Tarife und Umweltbilanz auf einen Blick
+            {t('billing.subtitle')}
           </p>
         </div>
         <GreenEnergyBadge size="default" />
@@ -150,19 +152,19 @@ export function Billing() {
               active={activeTab === 'overview'}
               onClick={() => setActiveTab('overview')}
               icon="📊"
-              label="Übersicht"
+              label={t('billing.tabs.overview')}
             />
             <TabButton
               active={activeTab === 'invoices'}
               onClick={() => setActiveTab('invoices')}
               icon="📄"
-              label="Rechnungen"
+              label={t('billing.tabs.invoices')}
             />
             <TabButton
               active={activeTab === 'plans'}
               onClick={() => setActiveTab('plans')}
               icon="⭐"
-              label="Tarife"
+              label={t('billing.tabs.plans')}
             />
           </nav>
         </div>
@@ -200,7 +202,7 @@ export function Billing() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-900 dark:text-white">Ihr aktueller Tarif</h3>
                   <span className="px-3 py-1 bg-primary-600 text-white text-sm font-medium rounded-full">
-                    {currentPlan === 'FREE' ? 'Free' : currentPlan}
+                    {currentPlan === 'FREE' ? 'Hobby' : currentPlan}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2 mb-4">

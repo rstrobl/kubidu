@@ -85,7 +85,10 @@ The `passwordResetToken` and `passwordResetExpires` fields are included in the u
 **Remediation:**  
 Remove `passwordResetToken` and `passwordResetExpires` from all API responses.
 
-**Status:** ✅ FIXED (see auth.service.ts and users.service.ts changes)
+**Status:** ✅ FIXED  
+- `auth.service.ts`: generateAuthResponse() now excludes passwordResetToken/Expires
+- `users.service.ts`: findById() and updateProfile() now exclude passwordResetToken/Expires
+- `jwt.strategy.ts`: validate() now excludes passwordResetToken/Expires
 
 ---
 
@@ -110,7 +113,9 @@ $ curl -s http://46.224.128.211:3000/api/environments \
 **Remediation:**  
 Return empty array or error when no scope parameters are provided.
 
-**Status:** ✅ FIXED (see environments.service.ts changes)
+**Status:** ✅ FIXED  
+- `environments.service.ts`: getVariables() now returns empty array if no serviceId/deploymentId
+- Added authorization check before returning any environment variables
 
 ---
 
@@ -166,7 +171,10 @@ $ for i in {1..20}; do
 **Remediation:**  
 Implement rate limiting using `@nestjs/throttler` or Redis-based limiter.
 
-**Status:** ✅ FIXED (ThrottlerModule added to auth endpoints)
+**Status:** ✅ FIXED  
+- Added `@nestjs/throttler` dependency
+- Configured ThrottlerModule in app.module.ts with multi-tier limits
+- Applied rate limits to login (5/min), register (5/min), forgot-password (3/min), reset-password (5/min)
 
 ---
 

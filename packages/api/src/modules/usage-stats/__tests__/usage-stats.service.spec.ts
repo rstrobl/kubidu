@@ -125,8 +125,9 @@ describe('UsageStatsService', () => {
       (httpService.get as jest.Mock).mockReturnValue(
         of({
           data: {
-            cpuUsage: 50,
-            memoryUsage: 60,
+            deployments: [],
+            totalCpuUsageMillicores: 50,
+            totalMemoryUsageBytes: 1024000,
           },
         }),
       );
@@ -134,7 +135,7 @@ describe('UsageStatsService', () => {
       const result = await service.getLiveMetrics('user-123', 'project-123');
 
       expect(result).toBeDefined();
-      expect(result?.cpuUsage).toBe(50);
+      expect(result?.totalCpuUsageMillicores).toBe(50);
     });
 
     it('should return null when deploy controller is unavailable', async () => {

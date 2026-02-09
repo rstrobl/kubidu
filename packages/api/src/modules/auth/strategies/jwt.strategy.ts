@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret'>> {
+  async validate(payload: any): Promise<Omit<User, 'passwordHash' | 'twoFactorSecret' | 'passwordResetToken' | 'passwordResetExpires'>> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -28,8 +28,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    // Remove sensitive fields
-    const { passwordHash, twoFactorSecret, ...userWithoutSensitiveData } = user;
+    // Remove all sensitive fields including password reset tokens (SEC-002)
+    const {
+      passwordHash,
+      twoFactorSecret,
+      passwordResetToken,
+      passwordResetExpires,
+      ...userWithoutSensitiveData
+    } = user;
 
     return userWithoutSensitiveData;
   }

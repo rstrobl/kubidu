@@ -38,6 +38,9 @@ describe('SearchService', () => {
       deployment: {
         findMany: jest.fn(),
       },
+      environment: {
+        findMany: jest.fn(),
+      },
       environmentVariable: {
         findMany: jest.fn(),
       },
@@ -115,6 +118,7 @@ describe('SearchService', () => {
       (prisma.project.findMany as jest.Mock).mockResolvedValue([mockProject]);
       (prisma.service.findMany as jest.Mock).mockResolvedValue([mockService]);
       (prisma.deployment.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.environment.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.environmentVariable.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.webhook.findMany as jest.Mock).mockResolvedValue([]);
 

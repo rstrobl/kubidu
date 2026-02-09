@@ -577,13 +577,13 @@ export function ServiceDetailModal({
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-700 px-6 bg-white dark:bg-gray-800">
-            <nav className="-mb-px flex space-x-8">
+          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-hide px-6">
               {(['overview', 'deployments', 'env', 'domains', 'autoscaling', 'settings'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab
                       ? 'border-primary-500 text-primary-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

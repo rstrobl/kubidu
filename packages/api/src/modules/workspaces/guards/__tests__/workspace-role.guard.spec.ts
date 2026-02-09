@@ -126,7 +126,7 @@ describe('WorkspaceRoleGuard', () => {
       (prisma.workspace.findUnique as jest.Mock).mockResolvedValue(mockWorkspace);
       (prisma.workspaceMember.findUnique as jest.Mock).mockResolvedValue({
         ...mockMembership,
-        role: WorkspaceRole.VIEWER,
+        role: WorkspaceRole.DEPLOYER,
       });
 
       await expect(guard.canActivate(createMockContext())).rejects.toThrow(ForbiddenException);

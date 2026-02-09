@@ -406,6 +406,62 @@ const templates = [
       ],
     },
   },
+  {
+    name: 'OpenClaw',
+    slug: 'openclaw',
+    description: 'AI Assistant with web-based setup wizard',
+    icon: 'https://openclaw.ai/favicon.ico',
+    category: 'ai',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'openclaw',
+          image: 'ghcr.io/openclaw/openclaw-railway',
+          tag: 'latest',
+          port: 8080,
+          public: true,
+          env: {
+            SETUP_PASSWORD: { input: { label: 'Setup Password', placeholder: 'Password for /setup wizard' } },
+            OPENCLAW_STATE_DIR: '/data/.openclaw',
+            OPENCLAW_WORKSPACE_DIR: '/data/workspace',
+            OPENCLAW_GATEWAY_TOKEN: { generate: 'secret' as const },
+          },
+          volumes: [
+            { name: 'data', mountPath: '/data', size: '5Gi' },
+          ],
+          memoryLimit: '2Gi',
+          cpuLimit: '2000m',
+        },
+      ],
+    },
+  },
+  {
+    name: 'Uptime Kuma',
+    slug: 'uptime-kuma',
+    description: 'Self-hosted monitoring tool',
+    icon: 'https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.svg',
+    category: 'monitoring',
+    isOfficial: true,
+    isPublic: true,
+    definition: {
+      services: [
+        {
+          name: 'uptime-kuma',
+          image: 'louislam/uptime-kuma',
+          tag: 'latest',
+          port: 3001,
+          public: true,
+          volumes: [
+            { name: 'data', mountPath: '/app/data', size: '1Gi' },
+          ],
+          memoryLimit: '256Mi',
+          cpuLimit: '250m',
+        },
+      ],
+    },
+  },
 ];
 
 async function main() {

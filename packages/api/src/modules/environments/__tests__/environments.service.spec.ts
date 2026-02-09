@@ -167,6 +167,8 @@ describe('EnvironmentsService', () => {
 
   describe('getVariables', () => {
     it('should return variables for a service', async () => {
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(mockService);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
       (prisma.environmentVariable.findMany as jest.Mock).mockResolvedValue([mockEnvVar]);
       (prisma.envVarReference.findMany as jest.Mock).mockResolvedValue([]);
 
@@ -177,6 +179,8 @@ describe('EnvironmentsService', () => {
     });
 
     it('should decrypt values when requested', async () => {
+      (prisma.service.findUnique as jest.Mock).mockResolvedValue(mockService);
+      (authorizationService.checkWorkspaceAccess as jest.Mock).mockResolvedValue(undefined);
       (prisma.environmentVariable.findMany as jest.Mock).mockResolvedValue([mockEnvVar]);
       (prisma.envVarReference.findMany as jest.Mock).mockResolvedValue([]);
 

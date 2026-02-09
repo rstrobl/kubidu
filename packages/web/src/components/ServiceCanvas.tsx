@@ -116,6 +116,18 @@ function DirectusIcon({ className }: { className?: string }) {
   return <img src="https://raw.githubusercontent.com/directus/directus/main/app/public/favicon.ico" alt="Directus" className={className} />;
 }
 
+function OpenClawIcon({ className }: { className?: string }) {
+  return <img src="https://openclaw.ai/favicon.ico" alt="OpenClaw" className={className} />;
+}
+
+function UptimeKumaIcon({ className }: { className?: string }) {
+  return <img src="https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.svg" alt="Uptime Kuma" className={className} />;
+}
+
+function MinIOIcon({ className }: { className?: string }) {
+  return <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/minio.svg" alt="MinIO" className={className} />;
+}
+
 function TemplateIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -149,6 +161,9 @@ function ServiceTypeIcon({ serviceType, templateDeploymentId, dockerImage, servi
   if (imageOrName.includes('ghost')) return <GhostIcon className={className} />;
   if (imageOrName.includes('prefect')) return <PrefectIcon className={className} />;
   if (imageOrName.includes('directus')) return <DirectusIcon className={className} />;
+  if (imageOrName.includes('openclaw')) return <OpenClawIcon className={className} />;
+  if (imageOrName.includes('uptime-kuma') || imageOrName.includes('uptime_kuma')) return <UptimeKumaIcon className={className} />;
+  if (imageOrName.includes('minio')) return <MinIOIcon className={className} />;
 
   if (templateDeploymentId) return <TemplateIcon className={className} />;
   if (serviceType === 'GITHUB') return <GitHubIcon className={className} />;

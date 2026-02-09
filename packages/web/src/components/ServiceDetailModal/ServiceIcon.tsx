@@ -34,6 +34,15 @@ export function ServiceIcon({ service }: ServiceIconProps) {
   if (imageOrName.includes('directus')) {
     return <img src="https://raw.githubusercontent.com/directus/directus/main/app/public/favicon.ico" alt="Directus" className="w-5 h-5" />;
   }
+  if (imageOrName.includes('openclaw')) {
+    return <img src="https://openclaw.ai/favicon.ico" alt="OpenClaw" className="w-5 h-5" />;
+  }
+  if (imageOrName.includes('uptime-kuma') || imageOrName.includes('uptime_kuma')) {
+    return <img src="https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.svg" alt="Uptime Kuma" className="w-5 h-5" />;
+  }
+  if (imageOrName.includes('minio')) {
+    return <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/minio.svg" alt="MinIO" className="w-5 h-5" />;
+  }
   if (service.templateDeploymentId) {
     return (
       <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

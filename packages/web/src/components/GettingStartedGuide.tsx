@@ -31,8 +31,8 @@ export function GettingStartedGuide({
   const steps: Step[] = [
     {
       id: 'create-project',
-      title: 'Create your first project',
-      description: 'A project is a container for your services. Think of it as an application or microservice group.',
+      title: 'Make a project',
+      description: 'Projects group your stuff. Like folders. Name it whatever, you can change it later.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -46,8 +46,8 @@ export function GettingStartedGuide({
     },
     {
       id: 'add-service',
-      title: 'Add a service',
-      description: 'Connect a GitHub repository or deploy a Docker image. Services are the building blocks of your project.',
+      title: 'Add your app',
+      description: 'Got a Docker image? Paste it. GitHub repo? Link it. We\'ll do the rest.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -57,8 +57,8 @@ export function GettingStartedGuide({
     },
     {
       id: 'configure-env',
-      title: 'Configure environment variables',
-      description: 'Add secrets and configuration. Variables can be shared between services or kept private.',
+      title: 'Add your secrets',
+      description: 'API keys, database URLs, that kind of thing. They\'re encrypted, we can\'t see them.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -69,8 +69,8 @@ export function GettingStartedGuide({
     },
     {
       id: 'deploy',
-      title: 'Deploy your service',
-      description: 'Click deploy to build and run your service. Kubidu handles containers, networking, and scaling.',
+      title: 'Hit deploy',
+      description: 'Click the button. Wait a minute or two. Get a URL. That\'s it, you\'re live.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -80,8 +80,8 @@ export function GettingStartedGuide({
     },
     {
       id: 'custom-domain',
-      title: 'Add a custom domain',
-      description: 'Connect your own domain with automatic SSL. Or use the free *.kubidu.io subdomain.',
+      title: 'Use your own domain',
+      description: 'Optional: Point your domain at us, we\'ll handle SSL. Or just use the free .kubidu.io URL.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -91,8 +91,8 @@ export function GettingStartedGuide({
     },
     {
       id: 'invite-team',
-      title: 'Invite your team',
-      description: 'Add team members to your workspace. Assign roles like Admin, Developer, or Viewer.',
+      title: 'Add your team',
+      description: 'Working with others? Add them here. They can be admins, developers, or just viewers.',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />

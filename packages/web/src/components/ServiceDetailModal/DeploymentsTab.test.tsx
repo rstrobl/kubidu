@@ -122,6 +122,73 @@ describe('DeploymentsTab', () => {
     });
   });
 
+  describe('rollback button', () => {
+    it('should show Rollback button for non-active successful deployments', () => {
+      const deployments = [
+        createDeployment({ id: 'deploy-1', status: 'RUNNING', isActive: true }),
+        createDeployment({ id: 'deploy-2', status: 'RUNNING', isActive: false, deployedAt: new Date().toISOString() }),
+      ];
+
+      render(<DeploymentsTab {...defaultProps} deployments={deployments} serviceId="svc-1" projectId="proj-1" />);
+
+      // Should only show one Rollback button (for the non-active deployment)
+      const rollbackButtons = screen.getAllByText('Rollback');
+      expect(rollbackButtons).toHaveLength(1);
+    });
+
+    it('should NOT show Rollback button for active deployment', () => {
+      const deployment = createDeployment({ status: 'RUNNING', isActive: true });
+
+      render(<DeploymentsTab {...defaultProps} deployments={[deployment]} serviceId="svc-1" projectId="proj-1" />);
+
+      expect(screen.queryByText('Rollback')).not.toBeInTheDocument();
+    });
+
+    it('should NOT show Rollback button for failed deployments', () => {
+      const deployment = createDeployment({ status: 'FAILED', isActive: false });
+
+      render(<DeploymentsTab {...defaultProps} deployments={[deployment]} serviceId="svc-1" projectId="proj-1" />);
+
+      expect(screen.queryByText('Rollback')).not.toBeInTheDocument();
+    });
+
+    it('should NOT show Rollback button without serviceId/projectId', () => {
+      const deployment = createDeployment({ status: 'RUNNING', isActive: false, deployedAt: new Date().toISOString() });
+
+      render(<DeploymentsTab {...defaultProps} deployments={[deployment]} />);
+
+      expect(screen.queryByText('Rollback')).not.toBeInTheDocument();
+    });
+
+    it('should open confirmation modal when Rollback is clicked', () => {
+      const deployments = [
+        createDeployment({ id: 'deploy-1', status: 'RUNNING', isActive: true }),
+        createDeployment({ id: 'deploy-2', status: 'STOPPED', isActive: false, gitCommitSha: 'abc1234', deployedAt: new Date().toISOString() }),
+      ];
+
+      render(<DeploymentsTab {...defaultProps} deployments={deployments} serviceId="svc-1" projectId="proj-1" />);
+
+      fireEvent.click(screen.getByText('Rollback'));
+
+      expect(screen.getByText('Confirm Rollback')).toBeInTheDocument();
+      expect(screen.getByText(/Rolling back to:/)).toBeInTheDocument();
+    });
+
+    it('should close modal when Cancel is clicked', () => {
+      const deployments = [
+        createDeployment({ id: 'deploy-1', status: 'RUNNING', isActive: true }),
+        createDeployment({ id: 'deploy-2', status: 'STOPPED', isActive: false, deployedAt: new Date().toISOString() }),
+      ];
+
+      render(<DeploymentsTab {...defaultProps} deployments={deployments} serviceId="svc-1" projectId="proj-1" />);
+
+      fireEvent.click(screen.getByText('Rollback'));
+      fireEvent.click(screen.getByText('Cancel'));
+
+      expect(screen.queryByText('Confirm Rollback')).not.toBeInTheDocument();
+    });
+  });
+
   describe('action buttons', () => {
     it('should show Retry button for failed deployments', () => {
       const deployment = createDeployment({ status: 'FAILED' });

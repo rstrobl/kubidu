@@ -157,31 +157,31 @@ const pricingPlans = [
 const features = [
   {
     icon: Icons.Rocket,
-    title: 'Deploy Docker Apps',
-    titleSimple: 'Launch Your App',
-    description: 'Push any Docker image and watch it go live. Your containers run on Kubernetes with zero config.',
-    descriptionSimple: 'Get your website or app online in minutes. No server setup, no complicated configurations.',
+    title: 'Docker → Live',
+    titleSimple: 'Your App, Online',
+    description: 'Push a Docker image, get a URL. We run it on Kubernetes so you don\'t have to learn Kubernetes.',
+    descriptionSimple: 'Upload your app, get a link. That\'s it. No server knowledge needed.',
   },
   {
     icon: Icons.Shield,
-    title: 'GDPR by Default',
-    titleSimple: 'Privacy Built-In',
-    description: 'Data stays in the EU. Privacy-first architecture. Compliant without the headache.',
-    descriptionSimple: 'Your data stays safe in Europe. Meet privacy requirements automatically.',
+    title: 'GDPR? Done.',
+    titleSimple: 'Privacy Sorted',
+    description: 'Data stays in Frankfurt. Your DPO will be happy. Actually happy, not "we\'ll figure it out" happy.',
+    descriptionSimple: 'Your data stays in Germany. European privacy laws? Covered.',
   },
   {
     icon: Icons.Leaf,
-    title: '100% Green Energy',
-    titleSimple: '100% Green Energy',
-    description: 'Powered entirely by renewable energy. Deploy sustainably without compromise.',
-    descriptionSimple: 'Powered by renewable energy. Good for your business, good for the planet.',
+    title: 'Actually Green',
+    titleSimple: 'Actually Green',
+    description: 'Our datacenter runs on renewable energy. Not "carbon offset" green — actual renewable electrons.',
+    descriptionSimple: 'Real renewable energy, not carbon offsets. Your hosting doesn\'t cost the planet.',
   },
   {
     icon: Icons.Server,
-    title: 'EU-Hosted Infrastructure',
-    titleSimple: 'Fast & Reliable',
-    description: 'Your apps run in Frankfurt, Germany. Fast for European users, compliant by design.',
-    descriptionSimple: 'Blazing fast servers in Germany. Your visitors get the best experience.',
+    title: 'Frankfurt, Germany',
+    titleSimple: 'Fast in Europe',
+    description: 'Sub-50ms latency across Europe. Not so great for Australia, but they\'ll survive.',
+    descriptionSimple: 'Servers in Germany means fast loading for European visitors.',
   },
 ];
 
@@ -216,39 +216,28 @@ const trustBadges = [
   { icon: '📜', label: 'ISO 27001 Ready', sublabel: 'Audit Logging' },
 ];
 
-// Social Proof - Testimonials for conversion
-const testimonials = [
+// Early Stage - Honest about where we are
+// TODO: Replace with real testimonials when we have them
+const earlyAdopterBenefits = [
   {
-    quote: "Finally a PaaS that takes GDPR seriously. Our legal team loves it.",
-    author: "Sarah M.",
-    role: "CTO, FinTech Startup",
-    avatar: "👩‍💼",
-    company: "Berlin",
+    icon: "🎯",
+    title: "Shape the product",
+    description: "Your feedback directly influences our roadmap. We actually read it.",
   },
   {
-    quote: "Deployed our entire stack in an afternoon. The Green Energy USP won over our investors.",
-    author: "Marcus K.",
-    role: "Founder",
-    avatar: "👨‍💻",
-    company: "Munich",
+    icon: "💰",
+    title: "Founder pricing",
+    description: "Early users keep their rates. We don't do bait-and-switch.",
   },
   {
-    quote: "We switched from Heroku. Same simplicity, half the cost, 100% green.",
-    author: "Lisa T.",
-    role: "Lead Developer",
-    avatar: "👩‍🔬",
-    company: "Hamburg",
+    icon: "🤝",
+    title: "Direct support",
+    description: "You'll talk to the people who built this, not a chatbot.",
   },
 ];
 
-// Company logos for social proof (placeholder names for now)
-const trustedByLogos = [
-  { name: 'TechStartup', initial: 'TS' },
-  { name: 'GreenVentures', initial: 'GV' },
-  { name: 'DataFlow', initial: 'DF' },
-  { name: 'CloudNative', initial: 'CN' },
-  { name: 'EuroScale', initial: 'ES' },
-];
+// Early stage honesty - no fake logos
+// We'll add real customer logos when we have permission
 
 export function Landing() {
   const { t } = useTranslation();
@@ -282,23 +271,23 @@ export function Landing() {
               <span className="text-2xl font-bold text-primary-600">Kubidu</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
-              <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-              <a href="https://docs.kubidu.io" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Docs</a>
+              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('nav.features')}</a>
+              <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('nav.howItWorks')}</a>
+              <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('nav.pricing')}</a>
+              <a href="https://docs.kubidu.io" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('nav.docs')}</a>
             </div>
             <div className="flex items-center space-x-4">
               <Link
                 to="/login"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
               >
-                Log in
+                {t('nav.login')}
               </Link>
               <Link
                 to="/register"
                 className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-all hover:-translate-y-0.5 shadow-lg shadow-primary-600/25"
               >
-                Start Free
+                {t('nav.startFree')}
                 <Icons.ArrowRight />
               </Link>
             </div>
@@ -314,26 +303,26 @@ export function Landing() {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            {/* Urgency Banner - Limited offer */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border border-amber-200 rounded-full text-sm font-medium mb-4 animate-fade-in">
+            {/* Early stage badge - Honest positioning */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-50 to-green-50 text-primary-800 border border-primary-200 rounded-full text-sm font-medium mb-4 animate-fade-in">
               <span className="flex items-center gap-1">
-                <span className="text-lg">🚀</span>
-                <span className="font-bold">Early Adopter Pricing</span>
+                <span className="text-lg">🌱</span>
+                <span className="font-bold">Building in public</span>
               </span>
-              <span className="text-amber-300">|</span>
-              <span>Lock in current rates forever</span>
+              <span className="text-primary-300">|</span>
+              <span>Early users get early-user pricing</span>
             </div>
 
             {/* Trust badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-success-50 text-success-700 rounded-full text-sm font-medium mb-8 animate-fade-in">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-                🌱 100% Green Energy
+                🌱 {t('landing.tagline.greenEnergy')}
               </span>
               <span className="text-success-300">|</span>
-              <span>🇪🇺 EU-Hosted</span>
+              <span>🇪🇺 {t('landing.tagline.euHosted')}</span>
               <span className="text-success-300">|</span>
-              <span>GDPR Compliant</span>
+              <span>{t('landing.tagline.gdprCompliant')}</span>
             </div>
 
             {/* Main headline - different for simple vs developer mode */}
@@ -353,13 +342,13 @@ export function Landing() {
             ) : (
               <>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight animate-fade-in-up">
-                  Deploy with confidence.
+                  Your code runs in Frankfurt.
                   <span className="block mt-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                    Stay compliant.
+                    Not Virginia.
                   </span>
                 </h1>
                 <p className="mt-8 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                  The developer-first PaaS that respects your data. Push your code, we handle the rest — from builds to scaling to GDPR compliance.
+                  Kubernetes hosting for teams who need EU data residency. You push, we deploy. Green energy, GDPR sorted, no DevOps degree required.
                 </p>
               </>
             )}
@@ -512,40 +501,39 @@ export function Landing() {
         </div>
       </section>
 
-      {/* Social Proof - Trusted By Logos */}
+      {/* Early Stage Honesty - No fake social proof */}
       <section className="py-12 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-8">
-            Trusted by innovative teams across Europe
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-            {trustedByLogos.map((company, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
-                  {company.initial}
-                </div>
-                <span className="text-sm font-medium">{company.name}</span>
-              </div>
-            ))}
+          <div className="text-center max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-800 rounded-full text-sm font-medium mb-4">
+              <span>🌱</span>
+              <span>Early Stage — We're building in public</span>
+            </div>
+            <p className="text-gray-600">
+              We're new, and we're honest about it. No fake testimonials, no made-up statistics. 
+              Just a small team building something we wish existed.
+            </p>
           </div>
           <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-gray-900">500+</span>
-              <span>Projects deployed</span>
-            </div>
-            <div className="hidden sm:block w-px h-8 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-success-600">2.4t</span>
-              <span>CO₂ saved</span>
-            </div>
-            <div className="hidden sm:block w-px h-8 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-gray-900">99.9%</span>
-              <span>Uptime</span>
-            </div>
+            <a 
+              href="https://status.kubidu.io" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-gray-700 transition-colors"
+            >
+              <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
+              <span>Live Status Page</span>
+            </a>
+            <div className="hidden sm:block w-px h-4 bg-gray-200" />
+            <a 
+              href="https://github.com/kubidu" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-gray-700 transition-colors"
+            >
+              <Icons.GitHub />
+              <span>Follow our progress</span>
+            </a>
           </div>
         </div>
       </section>
@@ -555,10 +543,10 @@ export function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Everything you need to ship fast
+              What you actually get
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Focus on your code. We handle infrastructure, security, and compliance.
+              No buzzwords. Here's what we do (and don't do).
             </p>
           </div>
 
@@ -713,51 +701,45 @@ secrets:
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Early Adopter Section - Honest value prop */}
       <section className="py-20 md:py-28 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Loved by developers & teams
+              Why join early?
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Join hundreds of teams already deploying sustainably on Kubidu.
+              We're still building — and that's actually a good thing for you.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
+            {earlyAdopterBenefits.map((benefit, index) => (
               <div
                 key={index}
-                className="relative p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-all"
+                className="relative p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-lg transition-all text-center"
               >
-                {/* Quote icon */}
-                <div className="absolute -top-3 left-6 text-4xl text-primary-200">"</div>
-                
-                <p className="text-gray-700 mb-6 pt-4 italic">
-                  {testimonial.quote}
+                <div className="text-4xl mb-4">{benefit.icon}</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {benefit.title}
+                </h3>
+                <p className="text-gray-600">
+                  {benefit.description}
                 </p>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-2xl">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{testimonial.author}</div>
-                    <div className="text-sm text-gray-500">{testimonial.role} • {testimonial.company}</div>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
 
-          {/* Call to action after testimonials */}
+          {/* Honest CTA */}
           <div className="mt-12 text-center">
+            <p className="text-sm text-gray-500 mb-4">
+              No fake testimonials yet — we'll earn those.
+            </p>
             <Link
               to="/register"
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-primary-600 border-2 border-primary-200 rounded-xl hover:bg-primary-50 transition-all"
             >
-              Join them — Start Free Today
+              Be one of our first users
               <Icons.ArrowRight />
             </Link>
           </div>
@@ -839,12 +821,12 @@ secrets:
       <section className="py-20 md:py-32 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white">
-            {simpleMode ? 'Ready to get started?' : 'Ready to deploy sustainably?'}
+            {simpleMode ? 'Ready to try it?' : 'Try it. It\'s free.'}
           </h2>
           <p className="mt-4 text-lg text-primary-100">
             {simpleMode 
-              ? 'Join thousands of businesses already online with Kubidu. No technical skills required.'
-              : 'Green energy. EU-hosted. GDPR compliant. Start deploying in minutes.'
+              ? 'Create a free account and see if it works for you. No credit card, no commitment.'
+              : 'Free tier, no credit card. If it sucks, just leave — we won\'t email you about it.'
             }
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -852,14 +834,14 @@ secrets:
               to="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-100 transition-all hover:-translate-y-1 shadow-xl"
             >
-              {simpleMode ? 'Create Free Account' : 'Start Deploying Free'}
+              {simpleMode ? 'Create Free Account' : 'Try it free'}
               <Icons.ArrowRight />
             </Link>
             <Link
               to="/login"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white border-2 border-white/30 rounded-xl hover:bg-white/10 transition-all"
             >
-              {simpleMode ? 'Learn More' : 'Sign In'}
+              {simpleMode ? 'Questions?' : 'Already have an account'}
             </Link>
           </div>
         </div>
@@ -872,45 +854,47 @@ secrets:
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <span className="text-2xl font-bold text-white">Kubidu</span>
-              <p className="mt-4 text-sm">
-                Deploy with confidence.<br />Stay compliant.
+              <p className="mt-4 text-sm whitespace-pre-line">
+                {t('landing.footer.tagline')}
               </p>
             </div>
 
             {/* Product */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <h4 className="font-semibold text-white mb-4">{t('landing.footer.product')}</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">{t('nav.features')}</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">{t('nav.pricing')}</a></li>
+                <li><a href="#how-it-works" className="hover:text-white transition-colors">{t('nav.howItWorks')}</a></li>
               </ul>
             </div>
 
             {/* Get Started */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Get Started</h4>
+              <h4 className="font-semibold text-white mb-4">{t('landing.footer.getStarted')}</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link to="/register" className="hover:text-white transition-colors">Sign Up Free</Link></li>
-                <li><Link to="/login" className="hover:text-white transition-colors">Sign In</Link></li>
+                <li><Link to="/register" className="hover:text-white transition-colors">{t('landing.footer.signUpFree')}</Link></li>
+                <li><Link to="/login" className="hover:text-white transition-colors">{t('nav.signIn')}</Link></li>
               </ul>
             </div>
 
             {/* Legal */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <h4 className="font-semibold text-white mb-4">{t('landing.footer.legal')}</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">{t('landing.footer.termsOfService')}</Link></li>
+                <li><Link to="/privacy" className="hover:text-white transition-colors">{t('landing.footer.privacyPolicy')}</Link></li>
               </ul>
             </div>
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm">
-              © {new Date().getFullYear()} Kubidu. All rights reserved.
+              {t('landing.footer.copyright', { year: new Date().getFullYear() })}
             </p>
             <div className="flex items-center gap-6">
+              {/* Language Switcher */}
+              <LanguageSwitcher variant="inline" showLabel={true} />
               {/* Mode toggle */}
               <button
                 onClick={toggleMode}
@@ -919,18 +903,18 @@ secrets:
                 {simpleMode ? (
                   <>
                     <Icons.Code />
-                    <span>Developer Mode</span>
+                    <span>{t('landing.footer.developerMode')}</span>
                   </>
                 ) : (
                   <>
                     <span>👤</span>
-                    <span>Simple Mode</span>
+                    <span>{t('landing.footer.simpleMode')}</span>
                   </>
                 )}
               </button>
               <div className="flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 bg-success-500 rounded-full" />
-                <span>All systems operational</span>
+                <span>{t('landing.footer.allSystemsOperational')}</span>
               </div>
             </div>
           </div>

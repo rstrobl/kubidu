@@ -143,7 +143,7 @@ describe('CostService', () => {
 
       const result = await service.getCostEstimate('workspace-123', 'user-123');
 
-      expect(result.workspace.plan).toBe('Free');
+      expect(result.workspace.plan).toBe('Hobby');
       expect(result.billing.basePrice).toBe(0);
     });
   });

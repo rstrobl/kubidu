@@ -160,6 +160,42 @@ export class EnvironmentsService {
     deploymentId?: string,
     decrypt: boolean = false,
   ): Promise<any[]> {
+    // SEC-003: Require at least one scope parameter to prevent returning all variables
+    if (!serviceId && !deploymentId) {
+      return []; // Return empty array instead of all environment variables
+    }
+
+    // Verify ownership via workspace before returning any data
+    if (serviceId) {
+      const service = await this.prisma.service.findUnique({
+        where: { id: serviceId },
+        include: { project: true },
+      });
+      if (!service) {
+        throw new NotFoundException('Service not found');
+      }
+      await this.authorizationService.checkWorkspaceAccess(userId, service.project.workspaceId, [
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+        WorkspaceRole.DEPLOYER,
+      ]);
+    }
+
+    if (deploymentId) {
+      const deployment = await this.prisma.deployment.findUnique({
+        where: { id: deploymentId },
+        include: { service: { include: { project: true } } },
+      });
+      if (!deployment) {
+        throw new NotFoundException('Deployment not found');
+      }
+      await this.authorizationService.checkWorkspaceAccess(userId, deployment.service.project.workspaceId, [
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+        WorkspaceRole.DEPLOYER,
+      ]);
+    }
+
     // Build where clause
     const where: any = {};
 
