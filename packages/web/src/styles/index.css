@@ -477,3 +477,75 @@
 [data-sonner-toast] {
   font-family: inherit;
 }
+
+/* Print Styles for Invoices */
+@media print {
+  /* Hide navigation and non-essential elements */
+  nav,
+  aside,
+  .print\\:hidden,
+  button:not(.print\\:visible) {
+    display: none !important;
+  }
+
+  /* Reset background colors for print */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Invoice-specific print styles */
+  .print\\:border-0 {
+    border: none !important;
+  }
+
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\\:bg-white {
+    background-color: white !important;
+  }
+
+  .print\\:bg-gray-50 {
+    background-color: #f9fafb !important;
+  }
+
+  .print\\:border-gray-300 {
+    border-color: #d1d5db !important;
+  }
+
+  .print\\:border-green-600 {
+    border-color: #16a34a !important;
+  }
+
+  /* Ensure text is readable */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Green certificate styling for print */
+  .print\\:bg-green-50 {
+    background-color: #f0fdf4 !important;
+  }
+
+  /* Optimize for A4 */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  /* Keep green branding visible */
+  .bg-gradient-to-r.from-green-600,
+  .bg-green-500,
+  .bg-green-600 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

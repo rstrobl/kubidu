@@ -25,7 +25,6 @@ const SHORTCUTS: ShortcutCategory[] = [
       { keys: ['D'], description: 'Deploy selected service' },
       { keys: ['L'], description: 'View logs' },
       { keys: ['S'], description: 'Open settings' },
-      { keys: ['F'], description: 'Toggle favorite' },
     ],
   },
   {

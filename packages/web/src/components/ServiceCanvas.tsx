@@ -174,7 +174,7 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
     displayStatus.status === 'running' ? 'border-green-400' :
     displayStatus.status === 'in-progress' ? 'border-yellow-400' :
     displayStatus.status === 'failed' ? 'border-red-400' :
-    'border-gray-200';
+    'border-gray-200 dark:border-gray-600';
 
   // Extract short domain for display
   const shortUrl = service.url ? service.url.replace(/^https?:\/\//, '').replace(/\.kubidu\.io$/, '') : null;
@@ -182,7 +182,7 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
   return (
     <div
       onClick={() => onSelect(service.id)}
-      className={`bg-white rounded-xl shadow-sm border-2 ${borderColor} px-3 py-3 cursor-pointer hover:shadow-md transition-all w-[220px] group relative ${isInProgress ? 'animate-pulse-border' : ''}`}
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border-2 ${borderColor} px-3 py-3 cursor-pointer hover:shadow-md dark:hover:shadow-gray-900/50 transition-all w-[220px] group relative ${isInProgress ? 'animate-pulse-border' : ''}`}
       style={isInProgress ? {
         animation: 'pulse-border 2s ease-in-out infinite',
         boxShadow: '0 0 0 0 rgba(234, 179, 8, 0.4)',
@@ -197,28 +197,28 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
       <Handle type="source" position={Position.Top} id="source-top" className="!opacity-0 !w-1 !h-1 !min-w-0 !min-h-0 !-top-px" />
       <Handle type="source" position={Position.Bottom} id="source-bottom" className="!opacity-0 !w-1 !h-1 !min-w-0 !min-h-0 !-bottom-px" />
       <div className="flex items-center gap-3">
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors flex items-center justify-center">
-          <ServiceTypeIcon serviceType={service.serviceType} templateDeploymentId={service.templateDeploymentId} dockerImage={service.dockerImage} serviceName={service.name} className="w-4 h-4 text-gray-600" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors flex items-center justify-center">
+          <ServiceTypeIcon serviceType={service.serviceType} templateDeploymentId={service.templateDeploymentId} dockerImage={service.dockerImage} serviceName={service.name} className="w-4 h-4 text-gray-600 dark:text-gray-300" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">{service.name}</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{service.name}</h3>
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${displayStatus.dotClass}`}></div>
           </div>
-          <p className="text-xs text-gray-400 truncate mt-0.5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
             {service.templateDeploymentId ? 'Template' : service.serviceType === 'GITHUB' ? service.repositoryBranch || 'main' : service.dockerImage || 'docker'}
           </p>
         </div>
       </div>
       {/* Public URL */}
       {shortUrl && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
           <a
             href={service.url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline"
+            className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
           >
             <LinkIcon className="w-3 h-3 flex-shrink-0" />
             <span className="truncate">{shortUrl}</span>
@@ -227,10 +227,10 @@ function ServiceNode({ data }: NodeProps<Node<ServiceNodeData>>) {
       )}
       {/* Volumes */}
       {volumes.length > 0 && (
-        <div className={`mt-2 pt-2 border-t border-gray-100 ${shortUrl ? '' : ''}`}>
+        <div className={`mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 ${shortUrl ? '' : ''}`}>
           <div className="flex flex-wrap gap-1.5">
             {volumes.map((volume: any) => (
-              <div key={volume.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-medium" title={`${volume.name} (${volume.size}) → ${volume.mountPath}`}>
+              <div key={volume.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium" title={`${volume.name} (${volume.size}) → ${volume.mountPath}`}>
                 <VolumeIcon className="w-3 h-3" />
                 <span className="truncate max-w-[80px]">{volume.size}</span>
               </div>
@@ -253,13 +253,13 @@ interface GroupNodeData {
 function GroupNode({ data }: NodeProps<Node<GroupNodeData>>) {
   return (
     <div
-      className="bg-gradient-to-br from-slate-50/90 to-gray-100/90 border-2 border-dashed border-slate-300 rounded-2xl"
+      className="bg-gradient-to-br from-slate-50/90 to-gray-100/90 dark:from-gray-800/90 dark:to-gray-900/90 border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-2xl"
       style={{ width: data.width, height: data.height }}
     >
-      <div className="flex items-center gap-2 px-5 py-2.5 border-b border-slate-200/50">
-        <TemplateIcon className="w-4 h-4 text-slate-500" />
-        <span className="text-sm font-semibold text-slate-700">{data.label}</span>
-        <span className="text-xs text-slate-400 ml-auto">{data.serviceCount} services</span>
+      <div className="flex items-center gap-2 px-5 py-2.5 border-b border-slate-200/50 dark:border-gray-700/50">
+        <TemplateIcon className="w-4 h-4 text-slate-500 dark:text-gray-400" />
+        <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">{data.label}</span>
+        <span className="text-xs text-slate-400 dark:text-gray-500 ml-auto">{data.serviceCount} services</span>
       </div>
     </div>
   );
@@ -705,7 +705,7 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
   // Close context menu on pane click or escape key
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
-  // Handle node click - bring to foreground and close context menu
+  // Handle node click - bring to foreground, close context menu, and select service
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setContextMenu(null);
 
@@ -715,7 +715,12 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
     if (groupId) {
       bringGroupToFront(groupId);
     }
-  }, [bringGroupToFront]);
+
+    // If it's a service node (not a group), trigger the service selection
+    if (!node.id.startsWith('group-')) {
+      onServiceSelect(node.id);
+    }
+  }, [bringGroupToFront, onServiceSelect]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -726,8 +731,9 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
   }, []);
 
   return (
-    <div className="h-full w-full bg-gray-50 relative">
+    <div className="h-full w-full bg-gray-50 dark:bg-gray-900 relative">
       <ReactFlow
+        colorMode="system"
         nodes={flowNodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -757,14 +763,14 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
       {contextMenu && (
         <div
           ref={menuRef}
-          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]"
+          className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <div className="px-3 py-2 border-b border-gray-100">
-            <p className="text-xs text-gray-500">
+          <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {contextMenu.type === 'group' ? 'Template Group' : 'Service'}
             </p>
-            <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
               {contextMenu.type === 'group' ? contextMenu.groupName : contextMenu.serviceName}
             </p>
           </div>
@@ -772,7 +778,7 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
           {contextMenu.type === 'group' && (
             <button
               onClick={handleRename}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -783,7 +789,7 @@ function ServiceCanvasInner({ projectId, services, onServiceSelect, onServicesDe
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

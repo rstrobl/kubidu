@@ -1,8 +1,34 @@
 # Kubidu UX Testing Report
 
-## Testing Date: 2026-02-08
-## Tester: Django (AI Agent)
+## Testing Date: 2026-02-08 (initial), 2026-02-09 (PM review)
+## Tester: Django (AI Agent / PM Subagent)
 ## Duration: ~30 minutes autonomous testing
+
+---
+
+## 🚨 NEW BUGS FOUND (2026-02-09 01:31 UTC)
+
+### CRITICAL - Project Navigation Broken
+| Bug | Severity | Status |
+|-----|----------|--------|
+| Project click uses name instead of UUID → 404 | **CRITICAL** | 🔴 OPEN |
+| `/api/favorites` returns 500 | **HIGH** | 🔴 OPEN |
+| "Add Service" button doesn't open modal | **HIGH** | 🔴 OPEN |
+| Service cards don't open detail panel on click | **MEDIUM** | 🔴 OPEN |
+
+**Reproduction (Project 404):**
+1. Login with demo@kubidu.io
+2. Click on "thomas-blog" project in list
+3. Frontend navigates to `/projects/thomas-blog`
+4. API returns 404 because it expects UUID
+5. **Workaround:** Use `/projects/db56b400-2077-4963-85e0-fbfe0233ba20`
+
+**Console Errors Captured:**
+```
+500 /api/favorites
+500 /api/favorites/db56b400-2077-4963-85e0-fbfe0233ba20/check
+404 /api/projects/thomas-blog (x4)
+```
 
 ---
 

@@ -80,9 +80,12 @@ export function Login() {
                   <label htmlFor="password" className="label">
                     Password
                   </label>
-                  <a href="#" className="text-sm text-primary-600 hover:text-primary-500">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                  >
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
                 <input
                   id="password"

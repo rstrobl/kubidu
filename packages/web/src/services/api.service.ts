@@ -87,6 +87,16 @@ class ApiService {
     return response.data;
   }
 
+  async forgotPassword(email: string) {
+    const response = await this.client.post('/auth/forgot-password', { email });
+    return response.data;
+  }
+
+  async resetPassword(token: string, password: string) {
+    const response = await this.client.post('/auth/reset-password', { token, password });
+    return response.data;
+  }
+
   async updateProfile(data: { name?: string; avatarUrl?: string }) {
     const response = await this.client.put('/users/me', data);
     return response.data;
@@ -648,27 +658,6 @@ class ApiService {
     return response.data;
   }
 
-  // Favorites endpoints
-  async getFavorites() {
-    const response = await this.client.get('/favorites');
-    return response.data;
-  }
-
-  async addFavorite(projectId: string) {
-    const response = await this.client.post(`/favorites/${projectId}`);
-    return response.data;
-  }
-
-  async removeFavorite(projectId: string) {
-    const response = await this.client.delete(`/favorites/${projectId}`);
-    return response.data;
-  }
-
-  async isFavorite(projectId: string) {
-    const response = await this.client.get(`/favorites/${projectId}/check`);
-    return response.data;
-  }
-
   // Global search endpoints
   async search(query: string, types?: string[], limit?: number) {
     const params = new URLSearchParams();
@@ -822,6 +811,29 @@ class ApiService {
     const response = await this.client.get(
       `/projects/${projectId}/services/${serviceId}/metrics`
     );
+    return response.data;
+  }
+
+  // Invoice endpoints
+  async getInvoices() {
+    const response = await this.client.get('/invoices');
+    return response.data;
+  }
+
+  async getInvoice(invoiceId: string) {
+    const response = await this.client.get(`/invoices/${invoiceId}`);
+    return response.data;
+  }
+
+  getInvoicePdfUrl(invoiceId: string): string {
+    const token = localStorage.getItem('access_token');
+    return `${API_URL}/api/invoices/${invoiceId}/pdf?token=${token}`;
+  }
+
+  async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
+    const response = await this.client.get(`/invoices/${invoiceId}/pdf`, {
+      responseType: 'blob',
+    });
     return response.data;
   }
 }

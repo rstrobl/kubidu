@@ -71,79 +71,82 @@ const Icons = {
   ),
 };
 
-// Pricing data based on shared/constants
+// Pricing data - Railway-competitive with Green Energy USP
+// Usage-based: Kunde zahlt was er nutzt. Unbegrenzte Projekte & Services.
 const pricingPlans = [
   {
-    name: 'Free',
+    name: 'Hobby',
     price: 0,
-    description: 'Perfect for side projects',
+    description: 'Für Studenten & Side Projects',
     features: [
-      '2 projects',
-      '2 deployments',
-      '1 CPU core',
-      '1 GB RAM',
-      '10 GB storage',
-      '100 build minutes/mo',
-      '10 GB bandwidth/mo',
-      'Community support',
+      'Unbegrenzte Projekte & Services',
+      '8 vCPU / 8 GB RAM pro Service',
+      '1 GB Storage',
+      '100 Build Minutes/mo',
+      '5 GB Bandwidth/mo',
+      '1 Custom Domain',
+      'Community Support',
+      '🌱 100% Green Energy',
     ],
-    cta: 'Start Free',
-    popular: false,
-  },
-  {
-    name: 'Starter',
-    price: 29,
-    description: 'For growing teams',
-    features: [
-      '10 projects',
-      '10 deployments',
-      '4 CPU cores',
-      '8 GB RAM',
-      '50 GB storage',
-      '500 build minutes/mo',
-      '100 GB bandwidth/mo',
-      'Email support',
-      'Custom domains',
-    ],
-    cta: 'Start Trial',
+    cta: 'Kostenlos starten',
     popular: false,
   },
   {
     name: 'Pro',
-    price: 99,
-    description: 'For scaling startups',
+    price: 5,
+    description: 'Für Indie Devs & Freelancer',
     features: [
-      '50 projects',
-      '50 deployments',
-      '16 CPU cores',
-      '32 GB RAM',
-      '200 GB storage',
-      '2,000 build minutes/mo',
-      '500 GB bandwidth/mo',
-      'Priority support',
-      'Team collaboration',
-      'Advanced analytics',
+      'Unbegrenzte Projekte & Services',
+      '32 vCPU / 32 GB RAM pro Service',
+      '10 GB Storage',
+      '500 Build Minutes/mo',
+      '50 GB Bandwidth/mo',
+      '5 Custom Domains',
+      'Email Support (48h)',
+      '🌱 100% Green Energy',
+      '📊 CO₂-Dashboard',
     ],
-    cta: 'Start Trial',
+    cta: 'Jetzt starten',
+    popular: false,
+  },
+  {
+    name: 'Team',
+    price: 20,
+    description: 'Für Startups & Teams',
+    features: [
+      'Unbegrenzte Projekte & Services',
+      '32 vCPU / 32 GB RAM pro Service',
+      '100 GB Storage',
+      '2.000 Build Minutes/mo',
+      '200 GB Bandwidth/mo',
+      'Unbegrenzte Domains',
+      'Priority Support (24h)',
+      '🌱 100% Green Energy',
+      '📊 Erweitertes CO₂-Dashboard',
+      '🏷️ Green Badge für Website',
+      'Team-Zusammenarbeit',
+    ],
+    cta: 'Team starten',
     popular: true,
   },
   {
     name: 'Enterprise',
     price: null,
-    description: 'For large organizations',
+    description: 'Für große Unternehmen',
     features: [
-      'Unlimited projects',
-      'Unlimited deployments',
-      'Custom resources',
-      'Unlimited storage',
-      'Unlimited bandwidth',
-      'Dedicated support',
-      'SLA guarantee',
-      'SOC 2 compliance',
-      'Custom integrations',
-      'On-premise option',
+      'Unbegrenzte Projekte & Services',
+      'Unlimited vCPU & RAM pro Service',
+      'Unbegrenzter Storage',
+      'Dedicated Support + Slack',
+      'SLA 99.95%',
+      'SSO/SAML',
+      'SOC 2 & HIPAA',
+      '🌱 100% Green Energy',
+      '📜 Green Certificate (PDF)',
+      '📈 ESG-Reporting',
+      'On-Premise Option',
     ],
-    cta: 'Contact Sales',
+    cta: 'Sales kontaktieren',
     popular: false,
   },
 ];
@@ -245,7 +248,7 @@ export function Landing() {
               <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Features</a>
               <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
               <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-              <a href="https://docs.kubidu.io" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Docs</a>
+              <a href="https://docs.kubidu.io" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Docs</a>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -332,13 +335,13 @@ export function Landing() {
                   I'm a Developer
                 </button>
               ) : (
-                <a
-                  href="https://github.com/kubidu"
+                <Link
+                  to="/login"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all"
                 >
-                  <Icons.GitHub />
-                  View on GitHub
-                </a>
+                  <Icons.ArrowRight />
+                  Sign In
+                </Link>
               )}
             </div>
 
@@ -658,8 +661,8 @@ secrets:
                   <div className="mt-4">
                     {plan.price !== null ? (
                       <div className="flex items-baseline">
-                        <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                        <span className="ml-2 text-gray-500">/month</span>
+                        <span className="text-4xl font-bold text-gray-900">€{plan.price}</span>
+                        <span className="ml-2 text-gray-500">/Monat{plan.name === 'Team' ? ' pro Seat' : ''}</span>
                       </div>
                     ) : (
                       <div className="text-4xl font-bold text-gray-900">Custom</div>
@@ -677,7 +680,7 @@ secrets:
                   ))}
                 </ul>
                 <Link
-                  to={plan.name === 'Enterprise' ? '/contact' : '/register'}
+                  to="/register"
                   className={`w-full py-3 px-4 text-center font-semibold rounded-xl transition-all ${
                     plan.popular
                       ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-600/25'
@@ -692,8 +695,6 @@ secrets:
 
           <p className="mt-12 text-center text-gray-500">
             All plans run on 100% renewable energy in our EU datacenter.
-            <br />
-            <a href="#" className="text-primary-600 hover:underline">View full comparison →</a>
           </p>
         </div>
       </section>
@@ -718,12 +719,12 @@ secrets:
               {simpleMode ? 'Create Free Account' : 'Start Deploying Free'}
               <Icons.ArrowRight />
             </Link>
-            <a
-              href="https://docs.kubidu.io"
+            <Link
+              to="/login"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white border-2 border-white/30 rounded-xl hover:bg-white/10 transition-all"
             >
-              {simpleMode ? 'Learn More' : 'Read the Docs'}
-            </a>
+              {simpleMode ? 'Learn More' : 'Sign In'}
+            </Link>
           </div>
         </div>
       </section>
@@ -731,23 +732,13 @@ secrets:
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {/* Brand */}
-            <div className="col-span-2 lg:col-span-1">
+            <div className="col-span-2 md:col-span-1">
               <span className="text-2xl font-bold text-white">Kubidu</span>
               <p className="mt-4 text-sm">
                 Deploy with confidence.<br />Stay compliant.
               </p>
-              <div className="mt-6 flex gap-4">
-                <a href="https://github.com/kubidu" className="hover:text-white transition-colors">
-                  <Icons.GitHub />
-                </a>
-                <a href="https://twitter.com/kubidu" className="hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  </svg>
-                </a>
-              </div>
             </div>
 
             {/* Product */}
@@ -756,30 +747,16 @@ secrets:
               <ul className="space-y-3 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="https://docs.kubidu.io" className="hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Changelog</a></li>
+                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Get Started */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <h4 className="font-semibold text-white mb-4">Get Started</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Resources</h4>
-              <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Partners</a></li>
+                <li><Link to="/register" className="hover:text-white transition-colors">Sign Up Free</Link></li>
+                <li><Link to="/login" className="hover:text-white transition-colors">Sign In</Link></li>
               </ul>
             </div>
 
@@ -787,10 +764,8 @@ secrets:
             <div>
               <h4 className="font-semibold text-white mb-4">Legal</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">GDPR</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Imprint</a></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>

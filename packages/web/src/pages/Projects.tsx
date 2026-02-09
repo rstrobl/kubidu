@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/api.service';
 import { useWorkspaceStore } from '../stores/workspace.store';
-import { FavoriteButton } from '../components/FavoriteButton';
 
 function ProjectSkeleton() {
   return (
@@ -74,16 +72,6 @@ export function Projects() {
   // Stats calculation
   const activeCount = projects.filter(p => p.status === 'ACTIVE').length;
   const totalServices = projects.reduce((sum, p) => sum + (p.services?.length || 0), 0);
-
-  // Fetch favorites
-  const { data: favorites = [] } = useQuery({
-    queryKey: ['favorites'],
-    queryFn: () => apiService.getFavorites(),
-  });
-
-  const favoriteProjectIds = new Set(favorites.map((f: any) => f.projectId));
-  const favoriteProjects = projects.filter(p => favoriteProjectIds.has(p.id));
-  const otherProjects = projects.filter(p => !favoriteProjectIds.has(p.id));
 
   return (
     <div className="px-4 sm:px-0 animate-fade-in">
@@ -189,76 +177,9 @@ export function Projects() {
             </div>
           </div>
 
-          {/* Favorites Section */}
-          {favoriteProjects.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <span className="text-yellow-500">⭐</span> Favorites
-              </h2>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {favoriteProjects.map((project, index) => (
-                  <div
-                    key={project.id}
-                    onClick={() => handleProjectClick(project.id)}
-                    className="card card-interactive group animate-fade-in-up ring-2 ring-yellow-200 dark:ring-yellow-800"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
-                          {project.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                            {project.name}
-                          </h3>
-                          <div className="text-xs text-gray-500">
-                            Created {new Date(project.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FavoriteButton projectId={project.id} size="sm" />
-                        <StatusBadge status={project.status} />
-                      </div>
-                    </div>
-
-                    {project.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {project.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-                        </svg>
-                        <span>{project.services?.length || 0} services</span>
-                      </div>
-                    </div>
-
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Other Projects Section */}
-          {otherProjects.length > 0 && favoriteProjects.length > 0 && (
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-              All Projects
-            </h2>
-          )}
-
           {/* Project grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(favoriteProjects.length > 0 ? otherProjects : projects).map((project, index) => (
+            {projects.map((project, index) => (
               <div
                 key={project.id}
                 onClick={() => handleProjectClick(project.id)}
@@ -279,10 +200,7 @@ export function Projects() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <FavoriteButton projectId={project.id} size="sm" />
-                    <StatusBadge status={project.status} />
-                  </div>
+                  <StatusBadge status={project.status} />
                 </div>
 
                 {project.description && (

@@ -238,15 +238,7 @@ export function GettingStartedGuide({
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="flex items-center justify-between">
-            <a
-              href="https://docs.kubidu.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              View full documentation →
-            </a>
+          <div className="flex items-center justify-end">
             <button
               onClick={onClose}
               className="btn btn-secondary btn-sm"

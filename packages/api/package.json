@@ -18,7 +18,8 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -n",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "seed:invoices": "ts-node prisma/seed-invoices.ts"
   },
   "dependencies": {
     "@kubidu/shared": "*",
@@ -47,6 +48,7 @@
     "passport-custom": "^1.1.1",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.11.3",
     "prisma": "^6.19.2",
     "redis": "^4.6.12",

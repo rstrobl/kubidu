@@ -24,7 +24,6 @@ const ERROR_SUGGESTIONS: Array<{
     title: 'Connection Issue',
     message: 'Unable to connect to the server.',
     suggestion: 'Check your internet connection and try again. If the problem persists, our servers may be experiencing issues.',
-    docLink: 'https://status.kubidu.app',
   },
   {
     pattern: /401|unauthorized|unauthenticated/i,

@@ -92,20 +92,20 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="fixed inset-x-0 top-14 mx-3 sm:absolute sm:inset-auto sm:right-0 sm:top-auto sm:mx-0 sm:mt-2 sm:w-96 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between min-h-[44px]">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllAsRead()}
-                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                className="text-xs text-primary-600 hover:text-primary-700 active:text-primary-800 font-medium py-2 px-1 min-h-[44px] flex items-center"
               >
                 Mark all as read
               </button>
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto">
             {isLoading ? (
               <div className="px-4 py-8 text-center text-gray-500 text-sm">
                 Loading...
@@ -135,7 +135,7 @@ export function NotificationBell() {
                     <button
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                      className={`w-full text-left px-4 py-3 min-h-[56px] hover:bg-gray-50 active:bg-gray-100 transition-colors ${
                         !notification.isRead ? 'bg-primary-50/50' : ''
                       }`}
                     >
@@ -173,13 +173,13 @@ export function NotificationBell() {
             )}
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+          <div className="px-4 py-2 border-t border-gray-100 flex items-center justify-between min-h-[52px]">
             <button
               onClick={() => {
                 navigate('/notifications');
                 setIsOpen(false);
               }}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              className="text-sm text-primary-600 hover:text-primary-700 active:text-primary-800 font-medium py-2 px-1 min-h-[44px] flex items-center"
             >
               View all
             </button>
@@ -188,7 +188,7 @@ export function NotificationBell() {
                 navigate('/settings/notifications');
                 setIsOpen(false);
               }}
-              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              className="text-sm text-gray-500 hover:text-gray-700 active:text-gray-800 flex items-center gap-1 py-2 px-1 min-h-[44px]"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />

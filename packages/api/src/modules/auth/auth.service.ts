@@ -21,6 +21,8 @@ import {
 } from '@kubidu/shared';
 import { generateApiKey, validatePassword } from '@kubidu/shared';
 import { EncryptionService } from '../../services/encryption.service';
+import { EmailService } from '../email/email.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +33,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly encryptionService: EncryptionService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   /**
@@ -548,5 +551,101 @@ export class AuthService {
       counter++;
       slug = `${baseSlug}-${counter}`;
     }
+  }
+
+  /**
+   * Request password reset - generates token and sends email
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    // Always return success message to prevent email enumeration
+    const successMessage = {
+      message: 'If an account with that email exists, we have sent a password reset link.',
+    };
+
+    if (!user || user.status !== 'ACTIVE') {
+      return successMessage;
+    }
+
+    // Generate a secure random token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // Token expires in 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    // Save hashed token to database
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetTokenHash,
+        passwordResetExpires: expiresAt,
+      },
+    });
+
+    // Build reset URL
+    const appUrl = this.configService.get<string>('app.url', 'http://localhost:5173');
+    const resetUrl = `${appUrl}/reset-password/${resetToken}`;
+
+    // Send email (logs in dev mode)
+    await this.emailService.sendPasswordResetEmail(user.email, {
+      resetUrl,
+      userName: user.name || undefined,
+    });
+
+    this.logger.log(`Password reset requested for user: ${user.id}`);
+
+    return successMessage;
+  }
+
+  /**
+   * Reset password with valid token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    // Validate password strength
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      throw new BadRequestException(passwordValidation.errors);
+    }
+
+    // Hash the provided token to compare with stored hash
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid token
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: tokenHash,
+        passwordResetExpires: {
+          gt: new Date(),
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+
+    this.logger.log(`Password reset successful for user: ${user.id}`);
+
+    return {
+      message: 'Password has been reset successfully. You can now log in with your new password.',
+    };
   }
 }

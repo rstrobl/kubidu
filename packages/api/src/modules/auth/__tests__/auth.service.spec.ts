@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { EncryptionService } from '../../../services/encryption.service';
+import { EmailService } from '../../email/email.service';
 
 // Mock bcrypt
 jest.mock('bcrypt', () => ({
@@ -68,12 +70,31 @@ describe('AuthService', () => {
       hash: jest.fn().mockReturnValue('hashed-key'),
     };
 
+    const mockConfigService = {
+      get: jest.fn((key: string) => {
+        const config: Record<string, any> = {
+          'jwt.secret': 'test-secret',
+          'jwt.expiresIn': '15m',
+          'jwt.refreshExpiresIn': '7d',
+        };
+        return config[key];
+      }),
+    };
+
+    const mockEmailService = {
+      sendVerificationEmail: jest.fn(),
+      sendPasswordResetEmail: jest.fn(),
+      sendWelcomeEmail: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwtService },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 

@@ -95,19 +95,21 @@ enum WorkspaceRole {
 
 // User accounts
 model User {
-  id               String     @id @default(uuid())
-  email            String     @unique
-  passwordHash     String     @map("password_hash")
-  name             String?
-  avatarUrl        String?    @map("avatar_url")
-  emailVerified    Boolean    @default(false) @map("email_verified")
-  twoFactorEnabled Boolean    @default(false) @map("two_factor_enabled")
-  twoFactorSecret  String?    @map("two_factor_secret")
-  status           UserStatus @default(ACTIVE)
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @updatedAt @map("updated_at")
-  lastLoginAt      DateTime?  @map("last_login_at")
-  deletedAt        DateTime?  @map("deleted_at")
+  id                   String     @id @default(uuid())
+  email                String     @unique
+  passwordHash         String     @map("password_hash")
+  name                 String?
+  avatarUrl            String?    @map("avatar_url")
+  emailVerified        Boolean    @default(false) @map("email_verified")
+  twoFactorEnabled     Boolean    @default(false) @map("two_factor_enabled")
+  twoFactorSecret      String?    @map("two_factor_secret")
+  passwordResetToken   String?    @map("password_reset_token")
+  passwordResetExpires DateTime?  @map("password_reset_expires")
+  status               UserStatus @default(ACTIVE)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  lastLoginAt          DateTime?  @map("last_login_at")
+  deletedAt            DateTime?  @map("deleted_at")
 
   apiKeys                  ApiKey[]
   notifications            Notification[]

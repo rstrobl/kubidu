@@ -72,7 +72,7 @@ export function CostCalculator() {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
         <div className="text-center text-gray-500 dark:text-gray-400">
-          Failed to load cost data
+          Kostendaten konnten nicht geladen werden
         </div>
       </div>
     );
@@ -91,10 +91,10 @@ export function CostCalculator() {
       <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            💰 Cost Estimate
+            💰 Kostenübersicht
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Based on current usage
+            Basierend auf aktueller Nutzung
           </p>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${planColors[costData.workspace.plan] || planColors.Free}`}>
@@ -105,27 +105,27 @@ export function CostCalculator() {
       {/* Main Cost Display */}
       <div className="p-6">
         <div className="text-center mb-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Estimated Monthly Cost</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Geschätzte monatliche Kosten</p>
           <div className="flex items-baseline justify-center gap-1">
             <span className="text-4xl font-bold text-gray-900 dark:text-white">
-              ${costData.billing.totalEstimate.toFixed(2)}
+              €{costData.billing.totalEstimate.toFixed(2)}
             </span>
-            <span className="text-gray-500 dark:text-gray-400">/mo</span>
+            <span className="text-gray-500 dark:text-gray-400">/Monat</span>
           </div>
         </div>
 
         {/* Cost Breakdown */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Base Price</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Grundpreis</p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              ${costData.billing.basePrice.toFixed(2)}
+              €{costData.billing.basePrice.toFixed(2)}
             </p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Resource Usage</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Ressourcennutzung</p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              ${costData.billing.resourceCosts.toFixed(2)}
+              €{costData.billing.resourceCosts.toFixed(2)}
             </p>
           </div>
         </div>
@@ -133,30 +133,30 @@ export function CostCalculator() {
         {/* Usage Stats */}
         <div className="space-y-3 mb-6">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Services</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Dienste</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {costData.usage.totalServices}
               {costData.usage.includedServices > 0 && (
                 <span className="text-gray-400 dark:text-gray-500">
-                  /{costData.usage.includedServices === -1 ? '∞' : costData.usage.includedServices} included
+                  /{costData.usage.includedServices === -1 ? '∞' : costData.usage.includedServices} inklusive
                 </span>
               )}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">CPU Cores</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">CPU-Kerne</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {costData.usage.totalCpuCores.toFixed(2)} vCPU
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Memory</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Arbeitsspeicher</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {costData.usage.totalMemoryGB.toFixed(2)} GB
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Storage</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Speicherplatz</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {costData.usage.totalStorageGB.toFixed(2)} GB
             </span>
@@ -168,7 +168,7 @@ export function CostCalculator() {
           onClick={() => setShowDetails(!showDetails)}
           className="w-full py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center justify-center gap-1"
         >
-          {showDetails ? 'Hide' : 'Show'} Service Breakdown
+          Details {showDetails ? 'ausblenden' : 'anzeigen'}
           <svg
             className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
             fill="none"
@@ -195,7 +195,7 @@ export function CostCalculator() {
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    ${service.totalCost.toFixed(2)}
+                    €{service.totalCost.toFixed(2)}
                   </span>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {service.cpuCores} CPU • {service.memoryGB}GB RAM
@@ -210,7 +210,7 @@ export function CostCalculator() {
         {costData.recommendations.length > 0 && (
           <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2">
-              💡 Recommendations
+              💡 Empfehlungen
             </p>
             <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
               {costData.recommendations.map((rec, i) => (
@@ -224,13 +224,13 @@ export function CostCalculator() {
         {costData.upsell && (
           <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 border border-primary-200 dark:border-primary-800">
             <p className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-1">
-              🚀 Upgrade to {costData.upsell.plan}
+              🚀 Upgrade auf {costData.upsell.plan}
             </p>
             <p className="text-sm text-primary-700 dark:text-primary-300 mb-3">
               {costData.upsell.message}
             </p>
             <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors">
-              View Plans
+              Tarife anzeigen
             </button>
           </div>
         )}
@@ -261,9 +261,9 @@ export function CostWidget() {
 
   return (
     <div className="p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
-      <p className="text-xs text-green-700 dark:text-green-300 mb-1">Est. Monthly Cost</p>
+      <p className="text-xs text-green-700 dark:text-green-300 mb-1">Geschätzte Monatskosten</p>
       <p className="text-lg font-bold text-green-800 dark:text-green-200">
-        ${costData.billing.totalEstimate.toFixed(2)}
+        €{costData.billing.totalEstimate.toFixed(2)}
         <span className="text-xs font-normal text-green-600 dark:text-green-400 ml-1">
           {costData.workspace.plan}
         </span>

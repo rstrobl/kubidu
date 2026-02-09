@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { ApiKeyStrategy } from './strategies/api-key.strategy';
 import { EncryptionService } from '../../services/encryption.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EncryptionService } from '../../services/encryption.service';
       }),
       inject: [ConfigService],
     }),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [

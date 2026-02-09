@@ -108,6 +108,10 @@ describe('ServicesService', () => {
       add: jest.fn().mockResolvedValue({}),
     };
 
+    const deployQueue = {
+      add: jest.fn().mockResolvedValue({}),
+    };
+
     const mockDeploymentsService = {
       create: jest.fn().mockResolvedValue({ id: 'deployment-123' }),
     };
@@ -141,6 +145,7 @@ describe('ServicesService', () => {
         ServicesService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: getQueueToken('build'), useValue: buildQueue },
+        { provide: getQueueToken('deploy'), useValue: deployQueue },
         { provide: DeploymentsService, useValue: mockDeploymentsService },
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: EncryptionService, useValue: mockEncryptionService },

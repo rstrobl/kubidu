@@ -7,6 +7,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { Projects } from './pages/Projects';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { NewProject } from './pages/NewProject';
@@ -25,6 +27,8 @@ import { Dependencies } from './pages/Dependencies';
 import { StatusPage } from './pages/StatusPage';
 import { Billing } from './pages/Billing';
 import { AuditLogs } from './pages/AuditLogs';
+import { Terms } from './pages/Terms';
+import { Privacy } from './pages/Privacy';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,6 +145,22 @@ function App() {
               </PublicRoute>
             }
           />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password/:token"
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            }
+          />
 
           {/* GitHub App installation callback (authenticated) */}
           <Route
@@ -157,6 +177,10 @@ function App() {
 
           {/* Public Status Page (no auth required) */}
           <Route path="/status/:workspaceSlug/:projectSlug" element={<StatusPage />} />
+
+          {/* Legal Pages (public) */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           {/* Protected routes with layout */}
           <Route
