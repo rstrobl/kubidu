@@ -319,17 +319,17 @@ export class CostService {
     const lowCostServices = services.filter(s => s.totalCost < 1 && s.cpuCores < 0.2);
     if (lowCostServices.length > 0) {
       recommendations.push(
-        `${lowCostServices.length} service(s) have minimal resources. Consider consolidating or removing unused services.`
+        `${lowCostServices.length} Service(s) nutzen wenig Ressourcen. Konsolidierung oder Entfernung könnte Kosten sparen.`
       );
     }
 
     // Plan-specific recommendations
     if (plan === 'FREE' && totalServices > 2) {
-      recommendations.push('You have exceeded the Free plan service limit. Consider upgrading to Starter.');
+      recommendations.push('Sie haben das Limit des Hobby-Plans überschritten. Upgrade auf Pro empfohlen.');
     }
 
     if (totalCpuCores > 4 && plan !== 'ENTERPRISE') {
-      recommendations.push('High CPU usage detected. Enterprise plan offers better per-core pricing.');
+      recommendations.push('Hohe CPU-Nutzung erkannt. Enterprise-Plan bietet bessere Preise pro Kern.');
     }
 
     return recommendations;
@@ -358,7 +358,7 @@ export class CostService {
         return {
           plan: nextPricing.name,
           potentialSavings: 0,
-          message: `Upgrade to ${nextPricing.name} for more included services and better resource pricing.`,
+          message: `Upgrade auf ${nextPricing.name} für mehr inkludierte Services und bessere Ressourcen-Preise.`,
         };
       }
     }

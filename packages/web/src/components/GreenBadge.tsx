@@ -125,7 +125,7 @@ export function GreenBadge({ co2Saved = 36.8 }: { co2Saved?: number }) {
         className="flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors border border-primary-200"
       >
         <span className="text-lg">🏷️</span>
-        <span className="font-medium">Get Green Badge</span>
+        <span className="font-medium">Grünes Badge</span>
       </button>
 
       <Transition.Root show={isOpen} as={Fragment}>

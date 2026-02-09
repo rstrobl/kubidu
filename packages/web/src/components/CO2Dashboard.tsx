@@ -26,7 +26,7 @@ function calculateCO2Stats(cpuHours: number): CO2Stats {
   const percentageSaved = co2Traditional > 0 ? ((co2Saved / co2Traditional) * 100) : 96;
 
   // Generate mock monthly trend data
-  const months = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
+  const months = ['Aug', 'Sep', 'Okt', 'Nov', 'Dez', 'Jan'];
   const monthlyTrend = months.map((month, i) => ({
     month,
     saved: (co2Saved / 6) * (0.5 + (i * 0.1)),
@@ -103,15 +103,15 @@ export function CO2Dashboard() {
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <span className="text-2xl">🌱</span>
-              CO₂ Impact Dashboard
+              CO₂-Bilanz Dashboard
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Your environmental impact with Kubidu's 100% renewable energy
+              Ihre Umweltbilanz mit Kubidus 100% erneuerbarer Energie
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-primary-100 rounded-full">
             <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
-            <span className="text-xs font-medium text-primary-700">Powered by 100% Green Energy</span>
+            <span className="text-xs font-medium text-primary-700">100% Grüne Energie</span>
           </div>
         </div>
       </div>
@@ -129,9 +129,9 @@ export function CO2Dashboard() {
             <div className="text-4xl font-bold text-primary-600">
               {animatedSaved.toFixed(1)}<span className="text-xl ml-1">kg</span>
             </div>
-            <div className="text-sm text-gray-500 mt-1">CO₂ Saved This Month</div>
+            <div className="text-sm text-gray-500 mt-1">CO₂ eingespart diesen Monat</div>
             <div className="mt-3 text-xs text-primary-600 bg-primary-50 rounded-full px-3 py-1 inline-block">
-              {stats.percentageSaved.toFixed(0)}% less than traditional hosting
+              {stats.percentageSaved.toFixed(0)}% weniger als traditionelles Hosting
             </div>
           </div>
 
@@ -143,9 +143,9 @@ export function CO2Dashboard() {
             <div className="text-4xl font-bold text-success-600">
               {stats.treesEquivalent.toFixed(1)}
             </div>
-            <div className="text-sm text-gray-500 mt-1">Trees Worth of CO₂</div>
+            <div className="text-sm text-gray-500 mt-1">Bäume CO₂-Äquivalent</div>
             <div className="mt-3 text-xs text-success-600 bg-success-50 rounded-full px-3 py-1 inline-block">
-              Annual absorption equivalent
+              Jährliche Absorptionsleistung
             </div>
           </div>
 
@@ -159,9 +159,9 @@ export function CO2Dashboard() {
             <div className="text-4xl font-bold text-accent-600">
               {stats.totalCpuHours.toFixed(0)}<span className="text-xl ml-1">h</span>
             </div>
-            <div className="text-sm text-gray-500 mt-1">Compute Hours</div>
+            <div className="text-sm text-gray-500 mt-1">Rechenzeit</div>
             <div className="mt-3 text-xs text-accent-600 bg-accent-50 rounded-full px-3 py-1 inline-block">
-              Running on renewable energy
+              Mit erneuerbarer Energie betrieben
             </div>
           </div>
         </div>
@@ -169,32 +169,32 @@ export function CO2Dashboard() {
         {/* Comparison Section */}
         <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Kubidu vs. Traditional Cloud Providers
+            Kubidu vs. traditionelle Cloud-Anbieter
           </h3>
           <div className="space-y-4">
             <ComparisonBar
-              label="Kubidu (100% Renewable)"
+              label="Kubidu (100% Erneuerbar)"
               value={4}
               maxValue={100}
               color="bg-primary-500"
               suffix="g CO₂/kWh"
             />
             <ComparisonBar
-              label="AWS (Global Average)"
+              label="AWS (Globaler Durchschnitt)"
               value={50}
               maxValue={100}
               color="bg-gray-400"
               suffix="g CO₂/kWh"
             />
             <ComparisonBar
-              label="Azure (Global Average)"
+              label="Azure (Globaler Durchschnitt)"
               value={45}
               maxValue={100}
               color="bg-gray-400"
               suffix="g CO₂/kWh"
             />
             <ComparisonBar
-              label="GCP (Global Average)"
+              label="GCP (Globaler Durchschnitt)"
               value={38}
               maxValue={100}
               color="bg-gray-400"
@@ -202,7 +202,7 @@ export function CO2Dashboard() {
             />
           </div>
           <p className="text-xs text-gray-500 mt-4">
-            * Data based on publicly available carbon intensity reports. Kubidu uses Hetzner data centers powered by 100% renewable energy in Frankfurt, Germany.
+            * Daten basieren auf öffentlich zugänglichen CO₂-Intensitätsberichten. Kubidu nutzt Hetzner-Rechenzentren mit 100% erneuerbarer Energie in Frankfurt, Deutschland.
           </p>
         </div>
 
@@ -210,9 +210,9 @@ export function CO2Dashboard() {
         <div className="mt-6 bg-gradient-to-r from-primary-600 to-success-600 rounded-xl p-6 text-white">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold">Share Your Impact! 🌍</h3>
+              <h3 className="text-lg font-bold">Teilen Sie Ihre Wirkung! 🌍</h3>
               <p className="text-primary-100 text-sm mt-1">
-                Add a green badge to your project to show your commitment to sustainability.
+                Fügen Sie ein grünes Badge zu Ihrem Projekt hinzu, um Ihr Engagement für Nachhaltigkeit zu zeigen.
               </p>
             </div>
             <button
@@ -222,7 +222,7 @@ export function CO2Dashboard() {
               }}
               className="px-6 py-3 bg-white text-primary-600 rounded-lg font-semibold hover:bg-primary-50 transition-colors shadow-lg whitespace-nowrap"
             >
-              Get Green Badge →
+              Grünes Badge erhalten →
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ export function CO2Widget() {
           <div className="text-2xl font-bold text-primary-600">
             {saved.toFixed(1)}<span className="text-sm ml-1">kg</span>
           </div>
-          <div className="text-xs text-gray-500">CO₂ saved this month</div>
+          <div className="text-xs text-gray-500">CO₂ eingespart diesen Monat</div>
         </div>
       </div>
     </div>

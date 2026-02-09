@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/auth.store';
 import { markAsNewUser } from '../components/OnboardingWizard';
 
 export function Register() {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,17 +22,17 @@ export function Register() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.register.errors.passwordMismatch'));
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.register.errors.passwordTooShort'));
       return;
     }
 
     if (!acceptTerms) {
-      setError('Please accept the terms and conditions');
+      setError(t('auth.register.errors.acceptTerms'));
       return;
     }
 
@@ -42,7 +44,7 @@ export function Register() {
       markAsNewUser();
       navigate('/projects');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(err.response?.data?.message || t('auth.register.errors.registrationFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -56,19 +58,19 @@ export function Register() {
         <div className="relative h-full flex flex-col items-center justify-center p-12">
           <div className="max-w-md text-center text-white">
             <h2 className="text-3xl font-bold mb-4">
-              Start deploying in minutes
+              {t('auth.register.startDeployingInMinutes')}
             </h2>
             <p className="text-primary-100 text-lg mb-8">
-              Join hundreds of developers who ship faster with Kubidu. No credit card required.
+              {t('auth.register.joinDevelopers')}
             </p>
             
             {/* Features list */}
             <div className="space-y-4 text-left">
               {[
-                { icon: '🚀', text: 'Deploy any Docker app instantly' },
-                { icon: '🔒', text: 'GDPR compliant from day one' },
-                { icon: '⚡', text: 'Auto-scaling included' },
-                { icon: '💾', text: '10 GB storage on free tier' },
+                { icon: '🚀', text: t('auth.register.features.deployDocker') },
+                { icon: '🔒', text: t('auth.register.features.gdprCompliant') },
+                { icon: '⚡', text: t('auth.register.features.autoScaling') },
+                { icon: '💾', text: t('auth.register.features.storage') },
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <span className="text-2xl">{feature.icon}</span>
@@ -92,10 +94,10 @@ export function Register() {
 
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Create your account
+              {t('auth.register.title')}
             </h1>
             <p className="mt-2 text-gray-600">
-              Start deploying your apps in minutes
+              {t('auth.register.subtitle')}
             </p>
           </div>
 
@@ -117,7 +119,7 @@ export function Register() {
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
               </svg>
-              Sign up with GitHub
+              {t('auth.register.signUpWithGitHub')}
             </button>
 
             {/* Divider */}
@@ -126,14 +128,14 @@ export function Register() {
                 <div className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">Or with email</span>
+                <span className="px-4 bg-white text-gray-500">{t('auth.register.orWithEmail')}</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="input-group">
                 <label htmlFor="name" className="label">
-                  Full name
+                  {t('auth.register.fullName')}
                 </label>
                 <input
                   id="name"
@@ -142,7 +144,7 @@ export function Register() {
                   autoComplete="name"
                   required
                   className="input"
-                  placeholder="Jane Developer"
+                  placeholder={t('auth.register.namePlaceholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -150,7 +152,7 @@ export function Register() {
 
               <div className="input-group">
                 <label htmlFor="email" className="label">
-                  Work email
+                  {t('auth.register.workEmail')}
                 </label>
                 <input
                   id="email"
@@ -159,7 +161,7 @@ export function Register() {
                   autoComplete="email"
                   required
                   className="input"
-                  placeholder="you@company.com"
+                  placeholder={t('auth.login.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -167,7 +169,7 @@ export function Register() {
 
               <div className="input-group">
                 <label htmlFor="password" className="label">
-                  Password
+                  {t('auth.register.password')}
                 </label>
                 <input
                   id="password"
@@ -176,7 +178,7 @@ export function Register() {
                   autoComplete="new-password"
                   required
                   className="input"
-                  placeholder="Min. 8 characters"
+                  placeholder={t('auth.register.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -184,7 +186,7 @@ export function Register() {
 
               <div className="input-group">
                 <label htmlFor="confirmPassword" className="label">
-                  Confirm password
+                  {t('auth.register.confirmPassword')}
                 </label>
                 <input
                   id="confirmPassword"
@@ -193,7 +195,7 @@ export function Register() {
                   autoComplete="new-password"
                   required
                   className="input"
-                  placeholder="••••••••"
+                  placeholder={t('auth.login.passwordPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
@@ -209,13 +211,13 @@ export function Register() {
                   onChange={(e) => setAcceptTerms(e.target.checked)}
                 />
                 <label htmlFor="terms" className="text-sm text-gray-600">
-                  I agree to the{' '}
+                  {t('auth.register.agreeToTerms')}{' '}
                   <Link to="/terms" target="_blank" className="text-primary-600 hover:underline">
-                    Terms of Service
+                    {t('auth.register.termsOfService')}
                   </Link>{' '}
-                  and{' '}
+                  {t('common.and')}{' '}
                   <Link to="/privacy" target="_blank" className="text-primary-600 hover:underline">
-                    Privacy Policy
+                    {t('auth.register.privacyPolicy')}
                   </Link>
                 </label>
               </div>
@@ -229,26 +231,26 @@ export function Register() {
               {isLoading ? (
                 <>
                   <span className="spinner spinner-sm" />
-                  Creating account...
+                  {t('auth.register.creatingAccount')}
                 </>
               ) : (
-                'Create free account'
+                t('auth.register.createAccount')
               )}
             </button>
 
             {/* Trust badge */}
             <p className="text-center text-xs text-gray-500">
-              🔒 Your data is hosted in the EU and never shared with third parties
+              {t('auth.register.dataHostedInEU')}
             </p>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            {t('auth.register.alreadyHaveAccount')}{' '}
             <Link
               to="/login"
               className="font-semibold text-primary-600 hover:text-primary-500"
             >
-              Sign in
+              {t('auth.register.signIn')}
             </Link>
           </p>
         </div>

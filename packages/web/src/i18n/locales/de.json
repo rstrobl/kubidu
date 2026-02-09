@@ -1,0 +1,604 @@
+{
+  "common": {
+    "loading": "Lädt...",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "submit": "Absenden",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "continue": "Fortfahren",
+    "skip": "Überspringen",
+    "retry": "Erneut versuchen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "all": "Alle",
+    "none": "Keine",
+    "yes": "Ja",
+    "no": "Nein",
+    "or": "oder",
+    "and": "und",
+    "optional": "optional",
+    "required": "erforderlich",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "warning": "Warnung",
+    "info": "Info"
+  },
+
+  "nav": {
+    "features": "Funktionen",
+    "howItWorks": "So funktioniert's",
+    "pricing": "Preise",
+    "docs": "Dokumentation",
+    "login": "Anmelden",
+    "startFree": "Kostenlos starten",
+    "signIn": "Einloggen",
+    "signOut": "Abmelden",
+    "allProjects": "Alle Projekte",
+    "notifications": "Benachrichtigungen",
+    "settings": "Einstellungen",
+    "activityFeed": "Aktivitäten",
+    "deploymentInsights": "Deployment-Insights",
+    "environmentalImpact": "Umweltbilanz",
+    "teamMembers": "Team & Mitglieder",
+    "billingPlans": "Abrechnung & Tarife",
+    "auditLogs": "Audit-Logs",
+    "euWestRegion": "EU-West Region",
+    "online": "Online",
+    "yourProjects": "Deine Projekte",
+    "noProjectsYet": "Noch keine Projekte",
+    "newProject": "Neues Projekt",
+    "selectProject": "Projekt wählen",
+    "services": "Services"
+  },
+
+  "landing": {
+    "tagline": {
+      "greenEnergy": "100% Grüne Energie",
+      "euHosted": "EU-Hosting",
+      "gdprCompliant": "DSGVO-konform"
+    },
+    "hero": {
+      "titleDev1": "Deploye mit Vertrauen.",
+      "titleDev2": "Bleib konform.",
+      "descDev": "Die Entwickler-PaaS, die deine Daten respektiert. Pushe deinen Code, wir kümmern uns um den Rest — von Builds über Skalierung bis zur DSGVO-Konformität.",
+      "titleSimple1": "Deine Website.",
+      "titleSimple2": "In Minuten online.",
+      "descSimple": "Starte deinen Blog, launche deine Business-Website oder baue deinen Online-Shop. Wir kümmern uns um die Technik — du konzentrierst dich auf das Wesentliche.",
+      "ctaDev": "Jetzt kostenlos deployen",
+      "ctaSimple": "Kostenlos starten — ohne Kreditkarte",
+      "imDeveloper": "Ich bin Entwickler"
+    },
+    "valueProps": {
+      "noCreditCard": "Keine Kreditkarte erforderlich",
+      "deployIn5Min": "In unter 5 Minuten online",
+      "cancelAnytime": "Jederzeit kündbar"
+    },
+    "terminal": {
+      "comment": "# Docker-Image deployen",
+      "pulling": "Lade nginx:latest...",
+      "creatingDeployment": "Erstelle Kubernetes-Deployment...",
+      "configuringService": "Konfiguriere Service in EU-Frankfurt...",
+      "statusRunning": "Status: LÄUFT",
+      "deploymentSuccessful": "🚀 Deployment erfolgreich!"
+    },
+    "browserPreview": {
+      "yourBusinessName": "Dein Firmenname",
+      "description": "Deine Website, dein Blog oder Online-Shop — live und bereit für Besucher!",
+      "shopNow": "Jetzt shoppen",
+      "learnMore": "Mehr erfahren",
+      "live": "Live",
+      "sslSecure": "SSL gesichert"
+    },
+    "trustBadges": {
+      "greenEnergy": "100% Grüne Energie",
+      "renewablePowered": "Erneuerbar betrieben",
+      "euHosted": "EU-Hosting",
+      "frankfurtGermany": "Frankfurt, Deutschland",
+      "gdprCompliant": "DSGVO-konform",
+      "privacyFirst": "Datenschutz zuerst",
+      "iso27001": "ISO 27001 Ready",
+      "auditLogging": "Audit-Logging"
+    },
+    "features": {
+      "title": "Alles was du brauchst, um schnell zu shippen",
+      "subtitle": "Konzentrier dich auf deinen Code. Wir übernehmen Infrastruktur, Sicherheit und Compliance.",
+      "deployDocker": {
+        "title": "Docker-Apps deployen",
+        "titleSimple": "App starten",
+        "desc": "Pushe ein beliebiges Docker-Image und sieh zu, wie es live geht. Deine Container laufen auf Kubernetes ohne Konfiguration.",
+        "descSimple": "Bring deine Website oder App in Minuten online. Kein Server-Setup, keine komplizierten Konfigurationen."
+      },
+      "gdpr": {
+        "title": "DSGVO standardmäßig",
+        "titleSimple": "Datenschutz integriert",
+        "desc": "Daten bleiben in der EU. Privacy-First-Architektur. Konform ohne Kopfschmerzen.",
+        "descSimple": "Deine Daten bleiben sicher in Europa. Erfülle Datenschutzanforderungen automatisch."
+      },
+      "greenEnergy": {
+        "title": "100% Grüne Energie",
+        "titleSimple": "100% Grüne Energie",
+        "desc": "Komplett mit erneuerbarer Energie betrieben. Deploye nachhaltig ohne Kompromisse.",
+        "descSimple": "Betrieben mit erneuerbarer Energie. Gut für dein Business, gut für den Planeten."
+      },
+      "euHosted": {
+        "title": "EU-gehostete Infrastruktur",
+        "titleSimple": "Schnell & Zuverlässig",
+        "desc": "Deine Apps laufen in Frankfurt, Deutschland. Schnell für europäische Nutzer, konform by Design.",
+        "descSimple": "Blitzschnelle Server in Deutschland. Deine Besucher bekommen die beste Erfahrung."
+      }
+    },
+    "howItWorks": {
+      "title": "Vom Code zur Produktion in 3 Schritten",
+      "titleSimple": "In 3 einfachen Schritten online",
+      "subtitle": "Kein DevOps-Studium nötig. Bring deine App in Minuten live.",
+      "subtitleSimple": "Keine technischen Kenntnisse nötig. Wir begleiten dich bei jedem Schritt.",
+      "step1": {
+        "title": "Projekt erstellen",
+        "titleSimple": "Kostenlos registrieren",
+        "desc": "Registriere dich in Sekunden. Erstelle ein Projekt, um deine Services und Umgebungen zu organisieren.",
+        "descSimple": "Erstelle dein kostenloses Konto in 30 Sekunden. Keine Kreditkarte nötig."
+      },
+      "step2": {
+        "title": "Service hinzufügen",
+        "titleSimple": "Template wählen",
+        "desc": "Deploye ein beliebiges Docker-Image. Setze Umgebungsvariablen und Ressourcenlimits.",
+        "descSimple": "Wähle WordPress, einen Blog oder deine eigene App. Wir kümmern uns um das Technische."
+      },
+      "step3": {
+        "title": "Live gehen",
+        "titleSimple": "Du bist online!",
+        "desc": "Dein Container läuft auf Kubernetes. Überwache Logs, skaliere Replicas, füge Domains hinzu.",
+        "descSimple": "Deine Seite ist live mit einer kostenlosen Webadresse. Füge jederzeit deine eigene Domain hinzu."
+      }
+    },
+    "codeSection": {
+      "titleDev": "Deploye jedes Docker-Image",
+      "titleSimple": "Alles was du brauchst, inklusive",
+      "descDev": "Node.js, Python, Go, Ruby, Rust — wenn es in Docker läuft, läuft es auf Kubidu. Deine Container, unsere Infrastruktur.",
+      "descSimple": "Keine versteckten Gebühren, kein kompliziertes Setup. Starte mit unserem kostenlosen Plan und wachse in deinem Tempo.",
+      "featuresDev": [
+        "Jedes Docker-Image deployen",
+        "Verschlüsselte Umgebungsvariablen",
+        "Ressourcenlimits (CPU & RAM)",
+        "Echtzeit-Deployment-Logs",
+        "Kubernetes-powered Zuverlässigkeit"
+      ],
+      "featuresSimple": [
+        "Kostenlose Web-Adresse (deinname.kubidu.io)",
+        "Automatische Sicherheit (SSL/HTTPS)",
+        "Deine Daten sicher in Europa",
+        "E-Mail-Support wenn du Hilfe brauchst",
+        "Wachse mit deinem Business"
+      ],
+      "templates": {
+        "title": "Beliebte Templates",
+        "wordpress": "WordPress Blog",
+        "wordpressDesc": "Heute noch schreiben",
+        "store": "Online-Shop",
+        "storeDesc": "Verkaufe deine Produkte",
+        "business": "Business-Website",
+        "businessDesc": "Professioneller Auftritt",
+        "portfolio": "Portfolio",
+        "portfolioDesc": "Zeige deine Arbeit",
+        "moreTemplates": "...und viele weitere Ein-Klick-Templates"
+      }
+    },
+    "pricing": {
+      "title": "Einfache, transparente Preise",
+      "subtitle": "Starte kostenlos, skaliere wie du wächst. Keine versteckten Gebühren, keine Überraschungen.",
+      "mostPopular": "Beliebteste Wahl",
+      "perMonth": "/Monat",
+      "perSeat": "pro Seat",
+      "allPlansGreen": "Alle Tarife laufen auf 100% erneuerbarer Energie in unserem EU-Rechenzentrum.",
+      "hobby": {
+        "name": "Hobby",
+        "description": "Für Studenten & Nebenprojekte",
+        "cta": "Kostenlos starten"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Für Indie-Devs & Freelancer",
+        "cta": "Jetzt starten"
+      },
+      "team": {
+        "name": "Team",
+        "description": "Für Startups & Teams",
+        "cta": "Team starten"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Für große Unternehmen",
+        "cta": "Sales kontaktieren"
+      },
+      "features": {
+        "unlimitedProjects": "Unbegrenzte Projekte & Services",
+        "vcpuRam": "{{vcpu}} vCPU / {{ram}} GB RAM pro Service",
+        "unlimitedVcpuRam": "Unbegrenzte vCPU & RAM pro Service",
+        "storage": "{{amount}} GB Speicher",
+        "unlimitedStorage": "Unbegrenzter Speicher",
+        "buildMinutes": "{{amount}} Build-Minuten/Monat",
+        "bandwidth": "{{amount}} GB Bandbreite/Monat",
+        "customDomains": "{{count}} Custom Domain(s)",
+        "unlimitedDomains": "Unbegrenzte Domains",
+        "communitySupport": "Community-Support",
+        "emailSupport": "E-Mail-Support ({{hours}}h)",
+        "prioritySupport": "Priority-Support ({{hours}}h)",
+        "dedicatedSupport": "Dedicated Support + Slack",
+        "greenEnergy": "🌱 100% Grüne Energie",
+        "co2Dashboard": "📊 CO₂-Dashboard",
+        "advancedCo2Dashboard": "📊 Erweitertes CO₂-Dashboard",
+        "greenBadge": "🏷️ Green Badge für Website",
+        "teamCollaboration": "Team-Zusammenarbeit",
+        "sla": "SLA {{percentage}}%",
+        "ssoSaml": "SSO/SAML",
+        "soc2Hipaa": "SOC 2 & HIPAA",
+        "greenCertificate": "📜 Green Certificate (PDF)",
+        "esgReporting": "📈 ESG-Reporting",
+        "onPremise": "On-Premise Option"
+      }
+    },
+    "finalCta": {
+      "titleDev": "Bereit nachhaltig zu deployen?",
+      "titleSimple": "Bereit loszulegen?",
+      "descDev": "Grüne Energie. EU-gehostet. DSGVO-konform. Starte in Minuten mit dem Deployen.",
+      "descSimple": "Schließe dich tausenden Unternehmen an, die bereits mit Kubidu online sind. Keine technischen Kenntnisse erforderlich.",
+      "ctaPrimary": "Jetzt kostenlos deployen",
+      "ctaPrimarySimple": "Kostenloses Konto erstellen",
+      "ctaSecondary": "Einloggen",
+      "ctaSecondarySimple": "Mehr erfahren"
+    },
+    "footer": {
+      "tagline": "Deploye mit Vertrauen.\nBleib konform.",
+      "product": "Produkt",
+      "getStarted": "Loslegen",
+      "signUpFree": "Kostenlos registrieren",
+      "legal": "Rechtliches",
+      "termsOfService": "Nutzungsbedingungen",
+      "privacyPolicy": "Datenschutzerklärung",
+      "copyright": "© {{year}} Kubidu. Alle Rechte vorbehalten.",
+      "developerMode": "Entwickler-Modus",
+      "simpleMode": "Einfacher Modus",
+      "allSystemsOperational": "Alle Systeme funktionieren"
+    }
+  },
+
+  "auth": {
+    "login": {
+      "title": "Willkommen zurück",
+      "subtitle": "Melde dich an, um fortzufahren",
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "du@firma.de",
+      "password": "Passwort",
+      "passwordPlaceholder": "••••••••",
+      "forgotPassword": "Passwort vergessen?",
+      "signIn": "Anmelden",
+      "signingIn": "Anmeldung läuft...",
+      "orContinueWith": "Oder fortfahren mit",
+      "continueWithGitHub": "Mit GitHub fortfahren",
+      "noAccount": "Noch kein Konto?",
+      "signUpFree": "Kostenlos registrieren",
+      "trustedByTeams": "Von 50+ Teams genutzt",
+      "deployWithConfidence": "Deploye mit Vertrauen",
+      "loginDescription": "Pushe deinen Code, wir kümmern uns um den Rest. Von Builds über Skalierung bis zur DSGVO-Konformität — alles in der EU.",
+      "gdprReady": "DSGVO-konform",
+      "byDefault": "Standardmäßig"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Deploye deine Apps in Minuten",
+      "signUpWithGitHub": "Mit GitHub registrieren",
+      "orWithEmail": "Oder mit E-Mail",
+      "fullName": "Vollständiger Name",
+      "namePlaceholder": "Max Mustermann",
+      "workEmail": "Geschäftliche E-Mail",
+      "password": "Passwort",
+      "passwordPlaceholder": "Mind. 8 Zeichen",
+      "confirmPassword": "Passwort bestätigen",
+      "agreeToTerms": "Ich stimme den",
+      "termsOfService": "Nutzungsbedingungen",
+      "privacyPolicy": "Datenschutzerklärung",
+      "createAccount": "Kostenloses Konto erstellen",
+      "creatingAccount": "Konto wird erstellt...",
+      "dataHostedInEU": "🔒 Deine Daten werden in der EU gehostet und nie mit Dritten geteilt",
+      "alreadyHaveAccount": "Bereits ein Konto?",
+      "signIn": "Anmelden",
+      "startDeployingInMinutes": "Starte in Minuten mit dem Deployen",
+      "joinDevelopers": "Schließe dich hunderten Entwicklern an, die mit Kubidu schneller shippen. Keine Kreditkarte erforderlich.",
+      "features": {
+        "deployDocker": "Jede Docker-App sofort deployen",
+        "gdprCompliant": "DSGVO-konform ab Tag eins",
+        "autoScaling": "Auto-Skalierung inklusive",
+        "storage": "10 GB Speicher im kostenlosen Plan"
+      },
+      "errors": {
+        "passwordMismatch": "Passwörter stimmen nicht überein",
+        "passwordTooShort": "Passwort muss mindestens 8 Zeichen haben",
+        "acceptTerms": "Bitte stimme den Nutzungsbedingungen zu",
+        "registrationFailed": "Registrierung fehlgeschlagen. Bitte versuche es erneut."
+      }
+    },
+    "errors": {
+      "invalidCredentials": "Ungültige E-Mail oder Passwort"
+    }
+  },
+
+  "dashboard": {
+    "title": "Dashboard",
+    "projects": "Projekte",
+    "activeDeployments": "Aktive Deployments",
+    "buildsInProgress": "Laufende Builds",
+    "recentProjects": "Neueste Projekte",
+    "noProjectsYet": "Noch keine Projekte",
+    "createFirstProject": "Erstelle dein erstes Projekt"
+  },
+
+  "projects": {
+    "title": "Projekte",
+    "subtitle": "Verwalte deine Projekte und Services",
+    "workspaceSubtitle": "{{name}} Workspace",
+    "newProject": "Neues Projekt",
+    "totalProjects": "Projekte gesamt",
+    "active": "Aktiv",
+    "services": "Services",
+    "region": "Region",
+    "createYourFirst": "Erstelle dein erstes Projekt",
+    "createFirstDescription": "Projekte organisieren deine Services, Datenbanken und Deployments. Leg jetzt los!",
+    "createProject": "Projekt erstellen",
+    "quickTips": {
+      "dockerReady": "Docker-Ready",
+      "dockerDesc": "Jedes Dockerfile deployen",
+      "githubIntegration": "GitHub-Integration",
+      "githubDesc": "Auto-Deploy bei Push",
+      "customDomains": "Custom Domains",
+      "domainsDesc": "Kostenloses SSL inklusive"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "deploying": "Wird deployed",
+      "failed": "Fehlgeschlagen",
+      "running": "Läuft"
+    },
+    "createdOn": "Erstellt am {{date}}"
+  },
+
+  "newProject": {
+    "breadcrumb": "Projekte",
+    "title": "Neues Projekt erstellen",
+    "subtitle": "Projekte organisieren deine Services, Datenbanken und Deployments.",
+    "projectName": "Projektname",
+    "projectNamePlaceholder": "mein-tolles-projekt",
+    "servicesAvailableAt": "Deine Services werden verfügbar sein unter:",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Was macht dieses Projekt?",
+    "whatsNext": "Was passiert als nächstes?",
+    "steps": {
+      "connectGitHub": "GitHub-Repo oder Docker-Image verbinden",
+      "configureEnvVars": "Umgebungsvariablen konfigurieren",
+      "deployOneClick": "Mit einem Klick deployen!"
+    },
+    "createProject": "Projekt erstellen",
+    "creating": "Wird erstellt...",
+    "tips": {
+      "githubIntegration": "GitHub-Integration",
+      "githubDesc": "Auto-Deploy bei jedem Push auf main",
+      "secureByDefault": "Standardmäßig sicher",
+      "secureDesc": "Kostenloses SSL, verschlüsselte Secrets"
+    },
+    "errors": {
+      "noWorkspace": "Kein Workspace ausgewählt",
+      "createFailed": "Projekt erstellen fehlgeschlagen. Bitte versuche es erneut."
+    }
+  },
+
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Verwalte dein Profil und Kontoeinstellungen",
+    "profile": {
+      "title": "Profil",
+      "subtitle": "Deine persönlichen Informationen",
+      "fullName": "Vollständiger Name",
+      "namePlaceholder": "Dein vollständiger Name",
+      "email": "E-Mail",
+      "emailCannotChange": "E-Mail kann nicht geändert werden",
+      "avatarUrl": "Avatar-URL",
+      "avatarPlaceholder": "https://beispiel.de/avatar.png",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichert...",
+      "profileUpdated": "Profil erfolgreich aktualisiert."
+    },
+    "security": {
+      "title": "Sicherheit",
+      "subtitle": "Verwalte deine Kontosicherheit",
+      "emailVerification": "E-Mail-Verifizierung",
+      "verified": "Verifiziert",
+      "notVerified": "Nicht verifiziert",
+      "password": "Passwort",
+      "lastChanged": "Zuletzt geändert: {{date}}",
+      "neverChanged": "Zuletzt geändert: Nie",
+      "change": "Ändern"
+    },
+    "notifications": {
+      "title": "Benachrichtigungseinstellungen",
+      "subtitle": "Konfiguriere E-Mail- und Push-Benachrichtigungen"
+    },
+    "billing": {
+      "title": "Abrechnung & Tarife",
+      "subtitle": "Nutzung, Rechnungen und Tarif-Upgrade anzeigen"
+    },
+    "memberSince": "Mitglied seit",
+    "dangerZone": {
+      "title": "Gefahrenzone",
+      "warning": "Wenn du dein Konto löschst, gibt es kein Zurück. Bitte sei dir sicher.",
+      "deleteAccount": "Konto löschen"
+    }
+  },
+
+  "billing": {
+    "title": "Abrechnung & Kosten",
+    "subtitle": "Deine Rechnungen, Tarife und Umweltbilanz auf einen Blick",
+    "tabs": {
+      "overview": "Übersicht",
+      "invoices": "Rechnungen",
+      "plans": "Tarife"
+    },
+    "usageThisMonth": "Nutzung diesen Monat",
+    "deployments": "Bereitstellungen",
+    "storageUsed": "Speicher genutzt",
+    "bandwidth": "Bandbreite",
+    "currentPlan": {
+      "title": "Dein aktueller Tarif",
+      "description": "Ideal für erste Projekte und Experimente. Jederzeit upgraden möglich.",
+      "comparePlans": "Tarife vergleichen"
+    },
+    "paymentMethod": {
+      "title": "Zahlungsmethode",
+      "expiresOn": "Läuft ab {{date}}",
+      "change": "Ändern",
+      "addAnother": "Weitere Zahlungsmethode hinzufügen"
+    },
+    "recentInvoices": {
+      "title": "Letzte Rechnungen",
+      "viewAll": "Alle anzeigen →",
+      "co2Saved": "{{amount}}kg gespart"
+    },
+    "backToOverview": "Zurück zur Übersicht",
+    "plans": {
+      "billingPeriod": {
+        "monthly": "Monatlich",
+        "yearly": "Jährlich",
+        "savePercent": "{{percent}}% sparen"
+      },
+      "greenPromise": {
+        "title": "Alle Tarife mit 100% grüner Energie",
+        "subtitle": "Egal welchen Tarif du wählst — deine Services laufen immer auf erneuerbarer Energie."
+      },
+      "yourPlan": "Dein Tarif",
+      "mostPopular": "Beliebteste Wahl",
+      "perYear": "/Jahr",
+      "greenEnergyIncluded": "100% Grüne Energie inklusive",
+      "currentPlan": "Dein aktueller Tarif",
+      "enterprise": {
+        "title": "Benötigst du eine maßgeschneiderte Lösung?",
+        "subtitle": "Unser Team berät dich gerne zu Enterprise-Optionen, Compliance und individuellen Anforderungen.",
+        "cta": "Beratungsgespräch vereinbaren"
+      }
+    },
+    "greenImpact": {
+      "title": "Deine Umweltbilanz",
+      "co2Saved": "CO₂ gespart",
+      "treesEquivalent": "Bäume-Äquivalent",
+      "greenEnergy": "Grüne Energie",
+      "since": "Seit {{date}}"
+    }
+  },
+
+  "onboarding": {
+    "welcome": {
+      "title": "Willkommen bei Kubidu! 🌱",
+      "description": "Die grüne Cloud-Plattform für europäische Unternehmen. Deploye mit Vertrauen, bleib konform."
+    },
+    "createProject": {
+      "title": "Erstelle dein erstes Projekt",
+      "description": "Projekte sind Container für deine Services. Stell sie dir als Ordner für zusammengehörige Apps vor."
+    },
+    "addService": {
+      "title": "Füge deinen ersten Service hinzu",
+      "description": "Verbinde ein GitHub-Repo oder deploye ein Docker-Image. Wir kümmern uns um den Rest."
+    },
+    "deploy": {
+      "title": "Deploye & geh live",
+      "description": "Ein Klick zum Deployen. URL sofort erhalten. Auto-HTTPS inklusive."
+    },
+    "userType": {
+      "question": "Was beschreibt dich am besten?",
+      "website": {
+        "title": "Ich möchte eine Website",
+        "description": "Blog, Portfolio, Business-Seite oder Online-Shop"
+      },
+      "developer": {
+        "title": "Ich bin Entwickler",
+        "description": "Docker-Apps, APIs, Datenbanken deployen"
+      }
+    },
+    "templates": {
+      "pickTemplate": "Wähle ein Template zum Starten",
+      "startOptional": "Mit einem Template starten (optional)",
+      "changeSelection": "← Auswahl ändern"
+    },
+    "highlights": {
+      "greenEnergy": "100% Grün",
+      "euHosted": "EU-Hosting",
+      "gdprReady": "DSGVO-Ready"
+    },
+    "skipForNow": "Erstmal überspringen",
+    "letsGo": "Los geht's! 🚀",
+    "stepOf": "Schritt {{current}} von {{total}} • Drücke Enter zum Fortfahren"
+  },
+
+  "globalSearch": {
+    "placeholder": "Projekte, Services, Deployments suchen...",
+    "suggestions": "Vorschläge",
+    "noResults": "Keine Ergebnisse gefunden",
+    "tryDifferent": "Versuche einen anderen Suchbegriff",
+    "quickActions": "SCHNELLAKTIONEN",
+    "allProjects": "Alle Projekte",
+    "newProject": "Neues Projekt",
+    "activity": "Aktivitäten",
+    "settings": "Einstellungen",
+    "navigation": {
+      "navigate": "navigieren",
+      "select": "auswählen",
+      "close": "schließen"
+    },
+    "poweredBy": "Powered by Kubidu-Suche",
+    "categories": {
+      "project": "Projekte",
+      "service": "Services",
+      "deployment": "Deployments",
+      "environment": "Umgebungen",
+      "webhook": "Webhooks"
+    }
+  },
+
+  "templates": {
+    "wordpress": {
+      "name": "WordPress",
+      "description": "Starte deinen Blog in Minuten"
+    },
+    "ghost": {
+      "name": "Ghost Blog",
+      "description": "Moderne Blogging-Plattform"
+    },
+    "static": {
+      "name": "Statische Website",
+      "description": "Einfache HTML/CSS-Seite"
+    },
+    "nodejs": {
+      "name": "Node.js",
+      "description": "Express.js Starter"
+    },
+    "python": {
+      "name": "Python",
+      "description": "Flask API"
+    },
+    "postgres": {
+      "name": "PostgreSQL",
+      "description": "Datenbank"
+    }
+  },
+
+  "errors": {
+    "general": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "networkError": "Netzwerkfehler. Bitte überprüfe deine Verbindung.",
+    "unauthorized": "Bitte melde dich an, um fortzufahren.",
+    "notFound": "Seite nicht gefunden.",
+    "serverError": "Serverfehler. Bitte versuche es später erneut.",
+    "failedToLoad": "Laden von {{resource}} fehlgeschlagen"
+  }
+}

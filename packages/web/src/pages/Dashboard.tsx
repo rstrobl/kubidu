@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api.service';
 import { useWorkspaceStore } from '../stores/workspace.store';
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspaceStore();
 
   const { data: projects, isLoading } = useQuery({
@@ -15,7 +17,7 @@ export function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-gray-500">{t('common.loading')}</div>
       </div>
     );
   }
@@ -23,9 +25,9 @@ export function Dashboard() {
   return (
     <div className="px-4 sm:px-0">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
         <Link to="/projects/new" className="btn btn-primary">
-          New Project
+          {t('nav.newProject')}
         </Link>
       </div>
 
@@ -48,7 +50,7 @@ export function Dashboard() {
               </svg>
             </div>
             <div>
-              <p className="mb-2 text-sm font-medium text-gray-600">Projects</p>
+              <p className="mb-2 text-sm font-medium text-gray-600">{t('dashboard.projects')}</p>
               <p className="text-lg font-semibold text-gray-700">
                 {projects?.length || 0}
               </p>
@@ -75,7 +77,7 @@ export function Dashboard() {
             </div>
             <div>
               <p className="mb-2 text-sm font-medium text-gray-600">
-                Active Deployments
+                {t('dashboard.activeDeployments')}
               </p>
               <p className="text-lg font-semibold text-gray-700">
                 {projects?.reduce(
@@ -107,7 +109,7 @@ export function Dashboard() {
             </div>
             <div>
               <p className="mb-2 text-sm font-medium text-gray-600">
-                Builds in Progress
+                {t('dashboard.buildsInProgress')}
               </p>
               <p className="text-lg font-semibold text-gray-700">0</p>
             </div>
@@ -116,13 +118,13 @@ export function Dashboard() {
       </div>
 
       <div className="card">
-        <h2 className="text-xl font-semibold mb-4">Recent Projects</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('dashboard.recentProjects')}</h2>
 
         {!projects || projects.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No projects yet</p>
+            <p className="text-gray-500 mb-4">{t('dashboard.noProjectsYet')}</p>
             <Link to="/projects/new" className="btn btn-primary">
-              Create your first project
+              {t('dashboard.createFirstProject')}
             </Link>
           </div>
         ) : (
