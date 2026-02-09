@@ -38,6 +38,7 @@ describe('AuthService', () => {
     const mockPrisma = {
       user: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
       },
@@ -46,6 +47,7 @@ describe('AuthService', () => {
       },
       workspace: {
         create: jest.fn(),
+        findUnique: jest.fn(),
       },
       workspaceMember: {
         create: jest.fn(),
@@ -380,6 +382,268 @@ describe('AuthService', () => {
       await expect(service.disable2FA('nonexistent-id')).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('verify2FA', () => {
+    it('should verify valid 2FA token and enable 2FA', async () => {
+      const userWith2FASecret = {
+        ...mockUser,
+        twoFactorSecret: 'JBSWY3DPEHPK3PXP',
+      };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(userWith2FASecret);
+
+      // Mock speakeasy to return true
+      const speakeasy = require('speakeasy');
+      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(true);
+
+      const result = await service.verify2FA(mockUser.id, '123456');
+
+      expect(result).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: { twoFactorEnabled: true },
+      });
+    });
+
+    it('should return false for invalid 2FA token', async () => {
+      const userWith2FASecret = {
+        ...mockUser,
+        twoFactorSecret: 'JBSWY3DPEHPK3PXP',
+      };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(userWith2FASecret);
+
+      const speakeasy = require('speakeasy');
+      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(false);
+
+      const result = await service.verify2FA(mockUser.id, '000000');
+
+      expect(result).toBe(false);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when 2FA not initiated', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        twoFactorSecret: null,
+      });
+
+      await expect(service.verify2FA(mockUser.id, '123456')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException when user not found', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.verify2FA('nonexistent', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('generateApiKey', () => {
+    it('should generate API key for user', async () => {
+      const mockApiKey = {
+        id: 'apikey-123',
+        userId: mockUser.id,
+        name: 'My API Key',
+        keyHash: 'hashed-key',
+        keyPrefix: 'kbdu_',
+      };
+      (prisma.apiKey.create as jest.Mock).mockResolvedValue(mockApiKey);
+
+      const result = await service.generateApiKey(mockUser.id, 'My API Key');
+
+      expect(result).toHaveProperty('apiKey');
+      expect(result).toHaveProperty('key');
+      expect(prisma.apiKey.create).toHaveBeenCalled();
+    });
+
+    it('should set expiration when expiresInDays is provided', async () => {
+      const mockApiKey = {
+        id: 'apikey-123',
+        userId: mockUser.id,
+        name: 'Expiring Key',
+      };
+      (prisma.apiKey.create as jest.Mock).mockResolvedValue(mockApiKey);
+
+      await service.generateApiKey(mockUser.id, 'Expiring Key', 30);
+
+      expect(prisma.apiKey.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          expiresAt: expect.any(Date),
+        }),
+      });
+    });
+  });
+
+  describe('forgotPassword', () => {
+    const mockEmailService = {
+      sendPasswordResetEmail: jest.fn(),
+    };
+
+    it('should send password reset email for existing user', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      (prisma.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+      const result = await service.forgotPassword('test@example.com');
+
+      expect(result.message).toContain('If an account with that email exists');
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: {
+          passwordResetToken: expect.any(String),
+          passwordResetExpires: expect.any(Date),
+        },
+      });
+    });
+
+    it('should return success message for non-existent user (no email enumeration)', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.forgotPassword('nonexistent@example.com');
+
+      expect(result.message).toContain('If an account with that email exists');
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('should return success message for inactive user', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        status: 'SUSPENDED',
+      });
+
+      const result = await service.forgotPassword('test@example.com');
+
+      expect(result.message).toContain('If an account with that email exists');
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should reset password with valid token', async () => {
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(mockUser);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-password');
+
+      const result = await service.resetPassword('valid-token', 'NewSecureP@ss123!');
+
+      expect(result.message).toContain('Password has been reset successfully');
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: {
+          passwordHash: 'new-hashed-password',
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        },
+      });
+    });
+
+    it('should throw BadRequestException for invalid token', async () => {
+      (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword('invalid-token', 'NewSecureP@ss123!'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for weak password', async () => {
+      await expect(
+        service.resetPassword('valid-token', '123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('login with 2FA', () => {
+    it('should login successfully with valid 2FA code', async () => {
+      const userWith2FA = {
+        ...mockUser,
+        twoFactorEnabled: true,
+        twoFactorSecret: 'JBSWY3DPEHPK3PXP',
+      };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(userWith2FA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const speakeasy = require('speakeasy');
+      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(true);
+
+      const result = await service.login({
+        email: 'test@example.com',
+        password: 'password',
+        twoFactorCode: '123456',
+      });
+
+      expect(result).toHaveProperty('accessToken');
+    });
+
+    it('should throw for invalid 2FA code', async () => {
+      const userWith2FA = {
+        ...mockUser,
+        twoFactorEnabled: true,
+        twoFactorSecret: 'JBSWY3DPEHPK3PXP',
+      };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(userWith2FA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const speakeasy = require('speakeasy');
+      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(false);
+
+      await expect(
+        service.login({
+          email: 'test@example.com',
+          password: 'password',
+          twoFactorCode: '000000',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('register edge cases', () => {
+    it('should handle marketing consent', async () => {
+      const registerDtoWithMarketing = {
+        email: 'new@example.com',
+        password: 'SecureP@ss123!',
+        name: 'New User',
+        gdprConsents: {
+          termsOfService: true,
+          privacyPolicy: true,
+          marketing: true,
+        },
+      };
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+
+      const createdUser = { ...mockUser, email: 'new@example.com' };
+      (prisma.user.create as jest.Mock).mockResolvedValue(createdUser);
+      (prisma.workspace.create as jest.Mock).mockResolvedValue({ id: 'workspace-123' });
+
+      await service.register(registerDtoWithMarketing);
+
+      expect(prisma.gdprConsent.createMany).toHaveBeenCalled();
+    });
+
+    it('should create workspace from user name', async () => {
+      const registerDtoWithName = {
+        email: 'johndoe@example.com',
+        password: 'SecureP@ss123!',
+        name: 'John Doe',
+        gdprConsents: {
+          termsOfService: true,
+          privacyPolicy: true,
+        },
+      };
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+
+      const createdUser = { ...mockUser, email: 'johndoe@example.com', name: 'John Doe' };
+      (prisma.user.create as jest.Mock).mockResolvedValue(createdUser);
+      (prisma.workspace.create as jest.Mock).mockResolvedValue({ id: 'workspace-123' });
+
+      await service.register(registerDtoWithName);
+
+      expect(prisma.workspace.create).toHaveBeenCalled();
     });
   });
 });
