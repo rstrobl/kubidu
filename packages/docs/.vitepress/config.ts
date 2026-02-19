@@ -134,5 +134,11 @@ export default defineConfig({
 
   markdown: {
     lineNumbers: true
+  },
+
+  vite: {
+    server: {
+      allowedHosts: ['django.rstrobl.com']
+    }
   }
 })
